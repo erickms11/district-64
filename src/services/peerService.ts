@@ -11,6 +11,17 @@ export interface PeerCallbacks {
 
 const ROOM_PREFIX = 'district64-'
 
+const PEER_CONFIG = {
+  debug: 1,
+  config: {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:stun2.l.google.com:19302' }
+    ]
+  }
+}
+
 export class PeerService {
   private peer: Peer | null = null
   private connection: DataConnection | null = null
@@ -42,9 +53,7 @@ export class PeerService {
 
     this.callbacks?.onStatusChange('initializing', 'Criando arena no Distrito 64...')
 
-    this.peer = new Peer(fullPeerId, {
-      debug: 1
-    })
+    this.peer = new Peer(fullPeerId, PEER_CONFIG)
 
     this.peer.on('open', (id) => {
       this.callbacks?.onPeerOpen?.(id, this.roomCode)
@@ -58,6 +67,11 @@ export class PeerService {
 
     this.peer.on('error', (err) => {
       console.error('Peer error:', err)
+      if (err.type === 'unavailable-id') {
+        console.warn('ID ocupado, gerando novo código de sala...')
+        this.createRoom()
+        return
+      }
       this.callbacks?.onStatusChange('error', `Erro na conexão: ${err.type}`)
     })
 
@@ -78,9 +92,7 @@ export class PeerService {
 
     this.callbacks?.onStatusChange('initializing', 'Entrando na arena...')
 
-    this.peer = new Peer({
-      debug: 1
-    })
+    this.peer = new Peer(PEER_CONFIG)
 
     this.peer.on('open', () => {
       if (!this.peer) return
@@ -101,13 +113,21 @@ export class PeerService {
   }
 
   private attachConnectionListeners(conn: DataConnection) {
-    conn.on('open', () => {
+    const handleOpen = () => {
+      console.log('Canal de dados WebRTC aberto com sucesso!')
       this.callbacks?.onStatusChange('connected', 'Tributos conectados na Arena!')
-    })
+    }
+
+    if (conn.open) {
+      handleOpen()
+    } else {
+      conn.on('open', handleOpen)
+    }
 
     conn.on('data', (data) => {
       try {
         const parsed = (typeof data === 'string' ? JSON.parse(data) : data) as PeerMessage
+        console.log('Mensagem P2P recebida:', parsed)
         this.callbacks?.onMessage(parsed)
       } catch (e) {
         console.error('Falha ao processar mensagem recebida:', e)
@@ -125,8 +145,21 @@ export class PeerService {
   }
 
   public sendMessage(msg: PeerMessage) {
-    if (this.connection && this.connection.open) {
-      this.connection.send(msg)
+    if (!this.connection) {
+      console.warn('Tentativa de envio sem conexão ativa:', msg)
+      return
+    }
+
+    const payload = JSON.stringify(msg)
+    if (this.connection.open) {
+      this.connection.send(payload)
+      console.log('Mensagem P2P enviada:', msg)
+    } else {
+      console.log('Conexão ainda abrindo, aguardando evento open para envio...')
+      this.connection.once('open', () => {
+        this.connection?.send(payload)
+        console.log('Mensagem P2P enviada após abertura:', msg)
+      })
     }
   }
 

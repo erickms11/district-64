@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { Chess } from 'chess.js'
 import type { Square, PieceSymbol, Move } from 'chess.js'
-import type { GameMode, Color, GameStatus, PeerMessage, CpuDifficulty, TimeControl } from './types'
+import type { GameMode, Color, GameStatus, PeerMessage, CpuDifficulty, TimeControl, PeerEmote } from './types'
 import { evaluateGameStatus, computeCapturedPieces } from './utils/chess'
 import { getBestCpuMove } from './utils/ai'
 import { recordMatchResult, resetPlayerStats } from './utils/stats'
@@ -36,6 +36,25 @@ export const App: React.FC = () => {
   })
   const [clocks, setClocks] = useState<{ w: number; b: number }>({ w: 0, b: 0 })
 
+  // Peer & Room state
+  const [roomCode, setRoomCode] = useState<string | null>(null)
+  const [connectionStatus, setConnectionStatus] = useState<string>('')
+  const [connectionState, setConnectionState] = useState<ConnectionState>('idle')
+  const [activeOpponentEmote, setActiveOpponentEmote] = useState<PeerEmote | null>(null)
+
+  // Chess Game State
+  const [chess] = useState(() => new Chess())
+  const [fen, setFen] = useState(chess.fen())
+  const [playerColor, setPlayerColor] = useState<Color>('w')
+  const [isFlipped, setIsFlipped] = useState(false)
+  const [selectedSquare, setSelectedSquare] = useState<Square | null>(null)
+  const [validMoves, setValidMoves] = useState<Move[]>([])
+  const [pendingPromotion, setPendingPromotion] = useState<{ from: Square; to: Square } | null>(null)
+  const [gameStatus, setGameStatus] = useState<GameStatus>(() => evaluateGameStatus(chess))
+
+  const isCpuThinking = useRef(false)
+  const hasRecordedStats = useRef(false)
+
   // Save settings when changed
   const handleSelectCpuDifficulty = (diff: CpuDifficulty) => {
     setCpuDifficulty(diff)
@@ -52,25 +71,6 @@ export const App: React.FC = () => {
     localStorage.setItem('d64_time_control', String(tc))
   }
 
-  // Peer & Room state
-  const [roomCode, setRoomCode] = useState<string | null>(null)
-  const [connectionStatus, setConnectionStatus] = useState<string>('')
-  const [connectionState, setConnectionState] = useState<ConnectionState>('idle')
-
-  // Chess Game State
-  const [chess] = useState(() => new Chess())
-  const [fen, setFen] = useState(chess.fen())
-  const [playerColor, setPlayerColor] = useState<Color>('w')
-  const [isFlipped, setIsFlipped] = useState(false)
-  const [selectedSquare, setSelectedSquare] = useState<Square | null>(null)
-  const [validMoves, setValidMoves] = useState<Move[]>([])
-  const [lastMove, setLastMove] = useState<{ from: Square; to: Square } | null>(null)
-  const [pendingPromotion, setPendingPromotion] = useState<{ from: Square; to: Square } | null>(null)
-  const [gameStatus, setGameStatus] = useState<GameStatus>(() => evaluateGameStatus(chess))
-
-  const isCpuThinking = useRef(false)
-  const hasRecordedStats = useRef(false)
-
   // Force re-renders and sync state
   const updateGameState = useCallback(() => {
     setFen(chess.fen())
@@ -81,20 +81,6 @@ export const App: React.FC = () => {
       haptics.check()
     }
   }, [chess])
-
-  // Record Player Stats when match ends
-  useEffect(() => {
-    if (gameStatus.isOver && !hasRecordedStats.current && (gameMode === 'cpu' || gameMode === 'online')) {
-      hasRecordedStats.current = true
-      if (gameStatus.winner === 'draw') {
-        recordMatchResult('draw')
-      } else if (gameStatus.winner === playerColor) {
-        recordMatchResult('win')
-      } else {
-        recordMatchResult('loss')
-      }
-    }
-  }, [gameStatus.isOver, gameStatus.winner, gameMode, playerColor])
 
   // Process a move
   const applyMove = useCallback(
@@ -107,7 +93,6 @@ export const App: React.FC = () => {
         })
 
         if (moveResult) {
-          setLastMove({ from, to })
           setSelectedSquare(null)
           setValidMoves([])
 
@@ -127,6 +112,33 @@ export const App: React.FC = () => {
     },
     [chess, updateGameState]
   )
+
+  // Keep fresh references for PeerJS listeners (Prevents re-initializing and tearing down WebRTC)
+  const applyMoveRef = useRef(applyMove)
+  applyMoveRef.current = applyMove
+
+  const playerColorRef = useRef(playerColor)
+  playerColorRef.current = playerColor
+
+  const timeControlRef = useRef(timeControl)
+  timeControlRef.current = timeControl
+
+  const updateGameStateRef = useRef(updateGameState)
+  updateGameStateRef.current = updateGameState
+
+  // Record Player Stats when match ends
+  useEffect(() => {
+    if (gameStatus.isOver && !hasRecordedStats.current && (gameMode === 'cpu' || gameMode === 'online')) {
+      hasRecordedStats.current = true
+      if (gameStatus.winner === 'draw') {
+        recordMatchResult('draw')
+      } else if (gameStatus.winner === playerColor) {
+        recordMatchResult('win')
+      } else {
+        recordMatchResult('loss')
+      }
+    }
+  }, [gameStatus.isOver, gameStatus.winner, gameMode, playerColor])
 
   // Chess Clock Interval
   useEffect(() => {
@@ -193,7 +205,7 @@ export const App: React.FC = () => {
     }
   }, [view, gameMode, gameStatus.isOver, playerColor, fen, chess, cpuDifficulty, applyMove])
 
-  // PeerJS setup & listener
+  // PeerJS setup & listener - Runs ONCE on mount, NEVER tears down connection on state changes!
   useEffect(() => {
     peerService.setup({
       onStatusChange: (status, message) => {
@@ -202,34 +214,75 @@ export const App: React.FC = () => {
 
         if (status === 'connected') {
           hasRecordedStats.current = false
+          chess.reset()
+          setSelectedSquare(null)
+          setValidMoves([])
+          updateGameStateRef.current()
           setGameMode('online')
           setView('game')
           const isHost = peerService.getIsHost()
-          setPlayerColor(isHost ? 'w' : 'b')
-          setIsFlipped(!isHost)
+          const assignedColor: Color = isHost ? 'w' : 'b'
+          setPlayerColor(assignedColor)
+          setIsFlipped(!isHost) // Black has flipped board
+          console.log('Conexão P2P estabelecida! Sou host?', isHost, 'Cor:', assignedColor)
+
+          // Host envia estado e configurações iniciais para o tributo desafiante
+          if (isHost) {
+            setTimeout(() => {
+              peerService.sendMessage({
+                type: 'SYNC_STATE',
+                timeControl: timeControlRef.current,
+                clocks: { w: timeControlRef.current, b: timeControlRef.current },
+                fen: chess.fen()
+              })
+            }, 300)
+          }
         }
       },
       onPeerOpen: (_, code) => {
         setRoomCode(code)
       },
       onMessage: (msg: PeerMessage) => {
+        console.log('App processando mensagem P2P:', msg)
         if (msg.type === 'MOVE' && msg.move) {
-          applyMove(msg.move.from, msg.move.to, msg.move.promotion)
+          console.log('Aplicando lance do oponente no tabuleiro:', msg.move)
+          const success = applyMoveRef.current(msg.move.from, msg.move.to, msg.move.promotion)
+          if (!success && msg.fen) {
+            console.warn('applyMove falhou, sincronizando via FEN recebido:', msg.fen)
+            chess.load(msg.fen)
+            updateGameStateRef.current()
+          }
           if (msg.timeRemaining) {
             setClocks(msg.timeRemaining)
           }
+        } else if (msg.type === 'SYNC_STATE') {
+          console.log('Sincronização de arena recebida:', msg)
+          if (msg.timeControl !== undefined) {
+            setTimeControl(msg.timeControl)
+          }
+          if (msg.clocks) {
+            setClocks(msg.clocks)
+          }
+          if (msg.fen) {
+            chess.load(msg.fen)
+            updateGameStateRef.current()
+          }
+        } else if (msg.type === 'EMOTE' && msg.emote) {
+          setActiveOpponentEmote(msg.emote)
+          setTimeout(() => {
+            setActiveOpponentEmote(null)
+          }, 4000)
         } else if (msg.type === 'RESTART') {
           hasRecordedStats.current = false
           chess.reset()
-          setLastMove(null)
           setSelectedSquare(null)
           setValidMoves([])
-          setClocks({ w: timeControl, b: timeControl })
-          updateGameState()
+          setClocks({ w: timeControlRef.current, b: timeControlRef.current })
+          updateGameStateRef.current()
         } else if (msg.type === 'SURRENDER') {
           setGameStatus({
             isOver: true,
-            winner: playerColor,
+            winner: playerColorRef.current,
             reason: 'surrender',
             inCheck: false
           })
@@ -237,7 +290,7 @@ export const App: React.FC = () => {
         } else if (msg.type === 'TIMEOUT') {
           setGameStatus({
             isOver: true,
-            winner: playerColor,
+            winner: playerColorRef.current,
             reason: 'timeout',
             inCheck: false
           })
@@ -256,7 +309,7 @@ export const App: React.FC = () => {
     return () => {
       peerService.cleanup()
     }
-  }, [chess, applyMove, playerColor, timeControl, updateGameState])
+  }, [chess]) // Dependency array is stable!
 
   // Host: Create Arena
   const handleCreateRoom = () => {
@@ -281,7 +334,7 @@ export const App: React.FC = () => {
     peerService.joinRoom(code)
   }
 
-  // CPU Game (uses configured settings)
+  // CPU Game
   const handleStartCpu = () => {
     hasRecordedStats.current = false
     isCpuThinking.current = false
@@ -290,7 +343,6 @@ export const App: React.FC = () => {
     setIsFlipped(cpuPlayerColor === 'b')
     setClocks({ w: timeControl, b: timeControl })
     chess.reset()
-    setLastMove(null)
     setSelectedSquare(null)
     setValidMoves([])
     updateGameState()
@@ -305,7 +357,6 @@ export const App: React.FC = () => {
     setIsFlipped(false)
     setClocks({ w: timeControl, b: timeControl })
     chess.reset()
-    setLastMove(null)
     setSelectedSquare(null)
     setValidMoves([])
     updateGameState()
@@ -317,7 +368,6 @@ export const App: React.FC = () => {
     hasRecordedStats.current = false
     isCpuThinking.current = false
     chess.reset()
-    setLastMove(null)
     setSelectedSquare(null)
     setValidMoves([])
     setClocks({ w: timeControl, b: timeControl })
@@ -336,7 +386,6 @@ export const App: React.FC = () => {
     setRoomCode(null)
     setConnectionState('idle')
     chess.reset()
-    setLastMove(null)
     setSelectedSquare(null)
     setValidMoves([])
     setView('lobby')
@@ -369,7 +418,10 @@ export const App: React.FC = () => {
     const turn = chess.turn()
     const isMyTurn = gameMode === 'local' || turn === playerColor
 
-    if (!isMyTurn) return
+    if (!isMyTurn) {
+      console.log('Não é seu turno. Turno atual:', turn, 'Minha cor:', playerColor)
+      return
+    }
 
     if (selectedSquare) {
       const isTargetMove = validMoves.find((m) => m.to === square)
@@ -386,9 +438,11 @@ export const App: React.FC = () => {
 
         const success = applyMove(selectedSquare, square)
         if (success && gameMode === 'online') {
+          console.log('Enviando lance P2P:', { from: selectedSquare, to: square })
           peerService.sendMessage({
             type: 'MOVE',
             move: { from: selectedSquare, to: square },
+            fen: chess.fen(),
             timeRemaining: clocks
           })
         }
@@ -415,11 +469,19 @@ export const App: React.FC = () => {
 
     const success = applyMove(from, to, promotionPiece)
     if (success && gameMode === 'online') {
+      console.log('Enviando promoção P2P:', { from, to, promotion: promotionPiece })
       peerService.sendMessage({
         type: 'MOVE',
         move: { from, to, promotion: promotionPiece },
+        fen: chess.fen(),
         timeRemaining: clocks
       })
+    }
+  }
+
+  const handleSendEmote = (emote: PeerEmote) => {
+    if (gameMode === 'online') {
+      peerService.sendMessage({ type: 'EMOTE', emote })
     }
   }
 
@@ -457,6 +519,8 @@ export const App: React.FC = () => {
             roomCode={roomCode || undefined}
             difficulty={cpuDifficulty}
             timeRemaining={timeControl > 0 ? clocks[opponentColor] : undefined}
+            activeOpponentEmote={activeOpponentEmote}
+            onSendEmote={gameMode === 'online' ? handleSendEmote : undefined}
             capturedByOpponent={playerColor === 'w' ? captured.w : captured.b}
             capturedByMe={playerColor === 'w' ? captured.b : captured.w}
             onRotateBoard={() => setIsFlipped((prev) => !prev)}
@@ -466,11 +530,11 @@ export const App: React.FC = () => {
 
           {/* Chess Board */}
           <Board
+            key={fen}
             chess={chess}
             isFlipped={isFlipped}
             selectedSquare={selectedSquare}
             validMoves={validMoves}
-            lastMove={lastMove}
             onSquareClick={handleSquareClick}
           />
 

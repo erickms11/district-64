@@ -8,17 +8,25 @@ export type CpuDifficulty = 'easy' | 'medium' | 'hard'
 
 export type TimeControl = 0 | 180 | 300 | 600 // 0 = sem tempo, 3m, 5m, 10m
 
+export interface PeerEmote {
+  icon: string
+  label: string
+}
+
 export interface PeerMessage {
-  type: 'MOVE' | 'RESTART' | 'SURRENDER' | 'SYNC_STATE' | 'TIMEOUT'
+  type: 'MOVE' | 'RESTART' | 'SURRENDER' | 'SYNC_STATE' | 'TIMEOUT' | 'EMOTE'
   move?: {
     from: Square
     to: Square
     promotion?: PieceSymbol
   }
+  emote?: PeerEmote
   fen?: string
   color?: Color
   timestamp?: number
   timeRemaining?: { w: number; b: number }
+  timeControl?: TimeControl
+  clocks?: { w: number; b: number }
 }
 
 export interface GameStatus {
