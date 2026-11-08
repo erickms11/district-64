@@ -23,11 +23,34 @@ export const App: React.FC = () => {
   const [gameMode, setGameMode] = useState<GameMode>('local')
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
-  // Configurable Settings (Moved to Settings Menu)
-  const [cpuDifficulty, setCpuDifficulty] = useState<CpuDifficulty>('medium')
-  const [cpuPlayerColor, setCpuPlayerColor] = useState<Color>('w')
-  const [timeControl, setTimeControl] = useState<TimeControl>(0)
+  // Configurable Settings with LocalStorage persistence
+  const [cpuDifficulty, setCpuDifficulty] = useState<CpuDifficulty>(() => {
+    return (localStorage.getItem('d64_cpu_diff') as CpuDifficulty) || 'medium'
+  })
+  const [cpuPlayerColor, setCpuPlayerColor] = useState<Color>(() => {
+    return (localStorage.getItem('d64_cpu_color') as Color) || 'w'
+  })
+  const [timeControl, setTimeControl] = useState<TimeControl>(() => {
+    const saved = localStorage.getItem('d64_time_control')
+    return saved !== null ? (Number(saved) as TimeControl) : 0
+  })
   const [clocks, setClocks] = useState<{ w: number; b: number }>({ w: 0, b: 0 })
+
+  // Save settings when changed
+  const handleSelectCpuDifficulty = (diff: CpuDifficulty) => {
+    setCpuDifficulty(diff)
+    localStorage.setItem('d64_cpu_diff', diff)
+  }
+
+  const handleSelectCpuPlayerColor = (color: Color) => {
+    setCpuPlayerColor(color)
+    localStorage.setItem('d64_cpu_color', color)
+  }
+
+  const handleSelectTimeControl = (tc: TimeControl) => {
+    setTimeControl(tc)
+    localStorage.setItem('d64_time_control', String(tc))
+  }
 
   // Peer & Room state
   const [roomCode, setRoomCode] = useState<string | null>(null)
@@ -492,11 +515,11 @@ export const App: React.FC = () => {
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         timeControl={timeControl}
-        onSelectTimeControl={(tc) => setTimeControl(tc)}
+        onSelectTimeControl={handleSelectTimeControl}
         cpuDifficulty={cpuDifficulty}
-        onSelectCpuDifficulty={(diff) => setCpuDifficulty(diff)}
+        onSelectCpuDifficulty={handleSelectCpuDifficulty}
         cpuPlayerColor={cpuPlayerColor}
-        onSelectCpuPlayerColor={(color) => setCpuPlayerColor(color)}
+        onSelectCpuPlayerColor={handleSelectCpuPlayerColor}
         onResetStats={() => resetPlayerStats()}
       />
     </div>
