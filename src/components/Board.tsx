@@ -11,7 +11,7 @@ interface BoardProps {
   pieceTheme?: PieceTheme
   selectedSquare: Square | null
   validMoves: Move[]
-  lastMove: { from: Square; to: Square } | null
+  lastMove?: { from: Square; to: Square } | null
   onSquareClick: (square: Square) => void
 }
 
@@ -21,7 +21,6 @@ export const Board: React.FC<BoardProps> = ({
   pieceTheme = 'staunton',
   selectedSquare,
   validMoves,
-  lastMove,
   onSquareClick
 }) => {
   const squares = getBoardSquares(isFlipped)
@@ -53,8 +52,6 @@ export const Board: React.FC<BoardProps> = ({
           const isSelected = selectedSquare === sq
           const isTargetMove = validDestinations.has(sq)
           const targetMove = validDestinations.get(sq)
-          const isLastMoveFrom = lastMove?.from === sq
-          const isLastMoveTo = lastMove?.to === sq
           const isKingInCheck = inCheck && piece?.type === 'k' && piece?.color === turn
 
           // Hunger Games Arena Square Palette:
@@ -71,7 +68,6 @@ export const Board: React.FC<BoardProps> = ({
                 relative flex items-center justify-center cursor-pointer transition-colors duration-150
                 ${bgSquare}
                 ${isSelected ? '!bg-amber-400/80 ring-2 ring-amber-500 inset-0 z-10 shadow-lg shadow-amber-500/30' : ''}
-                ${isLastMoveFrom || isLastMoveTo ? '!bg-amber-500/35' : ''}
                 ${isKingInCheck ? '!bg-red-600/80 animate-pulse' : ''}
               `}
               style={{
