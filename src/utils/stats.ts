@@ -65,3 +65,4 @@ export function resetPlayerStats(): PlayerStats {
   savePlayerStats(DEFAULT_STATS)
   return DEFAULT_STATS
 }
+

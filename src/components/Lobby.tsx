@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import QRCode from 'qrcode'
 import type { CpuDifficulty, Color, TimeControl } from '../types'
 import { loadPlayerStats, type PlayerStats } from '../utils/stats'
 import {
@@ -15,7 +16,8 @@ import {
   Download,
   Trophy,
   Skull,
-  Flame
+  Flame,
+  QrCode
 } from 'lucide-react'
 
 interface LobbyProps {
@@ -48,11 +50,33 @@ export const Lobby: React.FC<LobbyProps> = ({
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
   const [canInstall, setCanInstall] = useState(false)
   const [stats, setStats] = useState<PlayerStats>(() => loadPlayerStats())
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>('')
+  const [showQrCode, setShowQrCode] = useState(false)
 
   // Refresh stats on mount
   useEffect(() => {
     setStats(loadPlayerStats())
   }, [])
+
+  const shareUrl = roomCode ? `${window.location.origin}?room=${roomCode}` : ''
+
+  // Generate QR Code for fast mobile joining
+  useEffect(() => {
+    if (shareUrl) {
+      QRCode.toDataURL(shareUrl, {
+        margin: 1.5,
+        width: 180,
+        color: {
+          dark: '#090d16',
+          light: '#f8fafc'
+        }
+      })
+        .then(setQrCodeUrl)
+        .catch(console.error)
+    } else {
+      setQrCodeUrl('')
+    }
+  }, [shareUrl])
 
   // Listen for PWA installation prompt
   useEffect(() => {
@@ -75,8 +99,6 @@ export const Lobby: React.FC<LobbyProps> = ({
     }
     setDeferredPrompt(null)
   }
-
-  const shareUrl = roomCode ? `${window.location.origin}?room=${roomCode}` : ''
 
   const handleCopyLink = () => {
     if (!shareUrl) return
@@ -137,7 +159,7 @@ export const Lobby: React.FC<LobbyProps> = ({
         </p>
       </div>
 
-      {/* Player Stats Card (Registro do Tributo) */}
+      {/* Player Stats Card */}
       <div className="w-full bg-slate-900/80 border border-slate-800 rounded-2xl p-2.5 mb-3 shadow-sm">
         <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 mb-2 px-1">
           <span className="uppercase tracking-wider text-amber-400/90 font-cinzel text-[10px]">
@@ -149,7 +171,6 @@ export const Lobby: React.FC<LobbyProps> = ({
         </div>
 
         <div className="grid grid-cols-4 gap-1.5 text-center">
-          {/* Vitórias */}
           <div className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-1.5 flex flex-col items-center">
             <div className="flex items-center gap-1 text-emerald-400 text-xs font-bold">
               <Trophy className="w-3 h-3" />
@@ -158,7 +179,6 @@ export const Lobby: React.FC<LobbyProps> = ({
             <span className="text-[9px] text-slate-500 mt-0.5">Vitórias</span>
           </div>
 
-          {/* Derrotas */}
           <div className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-1.5 flex flex-col items-center">
             <div className="flex items-center gap-1 text-red-400 text-xs font-bold">
               <Skull className="w-3 h-3" />
@@ -167,7 +187,6 @@ export const Lobby: React.FC<LobbyProps> = ({
             <span className="text-[9px] text-slate-500 mt-0.5">Derrotas</span>
           </div>
 
-          {/* Empates */}
           <div className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-1.5 flex flex-col items-center">
             <div className="text-slate-300 text-xs font-bold">
               <span>{stats.draws}</span>
@@ -175,7 +194,6 @@ export const Lobby: React.FC<LobbyProps> = ({
             <span className="text-[9px] text-slate-500 mt-0.5">Empates</span>
           </div>
 
-          {/* Taxa de Vitória / Sequência */}
           <div className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-1.5 flex flex-col items-center">
             <div className="flex items-center gap-0.5 text-amber-400 text-xs font-bold">
               {stats.currentStreak > 1 && <Flame className="w-3 h-3 text-orange-400 animate-pulse" />}
@@ -228,11 +246,33 @@ export const Lobby: React.FC<LobbyProps> = ({
             <p className="text-xs uppercase tracking-widest text-amber-400 font-bold mb-1 font-cinzel">
               Arena Criada
             </p>
-            <div className="text-3xl font-black font-mono tracking-widest text-white my-3 py-2.5 bg-slate-950 rounded-xl border border-slate-800 shadow-inner">
+            <div className="text-3xl font-black font-mono tracking-widest text-white my-2 py-2 bg-slate-950 rounded-xl border border-slate-800 shadow-inner">
               {roomCode}
             </div>
 
-            <p className="text-xs text-slate-400 mb-4">{connectionStatus}</p>
+            <p className="text-xs text-slate-400 mb-3">{connectionStatus}</p>
+
+            {/* QR Code Toggle / Display */}
+            {qrCodeUrl && (
+              <div className="mb-3 flex flex-col items-center">
+                {showQrCode ? (
+                  <div className="p-2 bg-white rounded-xl shadow-lg border border-amber-500/30 mb-2">
+                    <img src={qrCodeUrl} alt="QR Code da Sala" className="w-36 h-36" />
+                    <span className="text-[10px] text-slate-950 font-semibold block mt-1">
+                      Aponte a câmera do celular
+                    </span>
+                  </div>
+                ) : null}
+
+                <button
+                  onClick={() => setShowQrCode((prev) => !prev)}
+                  className="text-xs text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-1.5 py-1 px-2.5 bg-slate-950 rounded-lg border border-slate-800"
+                >
+                  <QrCode className="w-3.5 h-3.5" />
+                  {showQrCode ? 'Ocultar QR Code' : 'Exibir QR Code para Celular'}
+                </button>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-2 mb-3">
               <button
