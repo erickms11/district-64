@@ -3,6 +3,8 @@
 Jogo de xadrez para celular baseado na estética de arena e sobrevivência de *Jogos Vorazes (Hunger Games)*.
 Desenvolvido como um **PWA (Progressive Web App)** de alto desempenho com partidas multiplayer online ponto-a-ponto via **PeerJS (WebRTC)**.
 
+🔗 **Jogue Agora Online:** [https://erickms11.github.io/district-64/](https://erickms11.github.io/district-64/)
+
 ---
 
 ## 🚀 Funcionalidades do MVP
