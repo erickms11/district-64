@@ -62,7 +62,9 @@ export const Lobby: React.FC<LobbyProps> = ({
     setStats(loadPlayerStats())
   }, [])
 
-  const shareUrl = roomCode ? `${window.location.origin}?room=${roomCode}` : ''
+  const shareUrl = roomCode
+    ? `${window.location.origin}${window.location.pathname}?room=${roomCode}`
+    : ''
 
   // Generate QR Code for fast mobile joining
   useEffect(() => {
