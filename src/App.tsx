@@ -4,6 +4,7 @@ import type { Square, PieceSymbol, Move } from 'chess.js'
 import type { GameMode, Color, GameStatus, PeerMessage, CpuDifficulty, TimeControl } from './types'
 import { evaluateGameStatus, computeCapturedPieces } from './utils/chess'
 import { getBestCpuMove } from './utils/ai'
+import { recordMatchResult } from './utils/stats'
 import { peerService } from './services/peerService'
 import type { ConnectionState } from './services/peerService'
 import { soundManager } from './utils/audio'
@@ -42,6 +43,7 @@ export const App: React.FC = () => {
   const [isMuted, setIsMuted] = useState(false)
 
   const isCpuThinking = useRef(false)
+  const hasRecordedStats = useRef(false)
 
   // Force re-renders and sync state
   const updateGameState = useCallback(() => {
@@ -54,6 +56,20 @@ export const App: React.FC = () => {
       haptics.check()
     }
   }, [chess])
+
+  // Record Player Stats when match ends
+  useEffect(() => {
+    if (gameStatus.isOver && !hasRecordedStats.current && (gameMode === 'cpu' || gameMode === 'online')) {
+      hasRecordedStats.current = true
+      if (gameStatus.winner === 'draw') {
+        recordMatchResult('draw')
+      } else if (gameStatus.winner === playerColor) {
+        recordMatchResult('win')
+      } else {
+        recordMatchResult('loss')
+      }
+    }
+  }, [gameStatus.isOver, gameStatus.winner, gameMode, playerColor])
 
   // Process a move
   const applyMove = useCallback(
@@ -101,7 +117,6 @@ export const App: React.FC = () => {
         const newTime = prev[currentTurn] - 1
 
         if (newTime <= 0) {
-          // Timeout!
           const winner: Color = currentTurn === 'w' ? 'b' : 'w'
           setGameStatus({
             isOver: true,
@@ -164,6 +179,7 @@ export const App: React.FC = () => {
         if (message) setConnectionStatus(message)
 
         if (status === 'connected') {
+          hasRecordedStats.current = false
           setGameMode('online')
           setView('game')
           const isHost = peerService.getIsHost()
@@ -181,6 +197,7 @@ export const App: React.FC = () => {
             setClocks(msg.timeRemaining)
           }
         } else if (msg.type === 'RESTART') {
+          hasRecordedStats.current = false
           chess.reset()
           setLastMove(null)
           setSelectedSquare(null)
@@ -230,6 +247,14 @@ export const App: React.FC = () => {
     setRoomCode(code)
   }
 
+  // Cancel Room & return to menu
+  const handleCancelRoom = () => {
+    peerService.cleanup()
+    setRoomCode(null)
+    setConnectionState('idle')
+    setConnectionStatus('')
+  }
+
   // Guest: Join Arena
   const handleJoinRoom = (code: string) => {
     setGameMode('online')
@@ -239,6 +264,7 @@ export const App: React.FC = () => {
 
   // CPU Game
   const handleStartCpu = (difficulty: CpuDifficulty, chosenColor: Color, tc: TimeControl) => {
+    hasRecordedStats.current = false
     isCpuThinking.current = false
     setGameMode('cpu')
     setCpuDifficulty(difficulty)
@@ -256,6 +282,7 @@ export const App: React.FC = () => {
 
   // Local Pass & Play
   const handleStartLocal = (tc: TimeControl) => {
+    hasRecordedStats.current = false
     setGameMode('local')
     setPlayerColor('w')
     setIsFlipped(false)
@@ -271,6 +298,7 @@ export const App: React.FC = () => {
 
   // Reset / Rematch
   const handleRestart = () => {
+    hasRecordedStats.current = false
     isCpuThinking.current = false
     chess.reset()
     setLastMove(null)
@@ -286,6 +314,7 @@ export const App: React.FC = () => {
 
   // Return to Lobby
   const handleExit = () => {
+    hasRecordedStats.current = false
     isCpuThinking.current = false
     peerService.cleanup()
     setRoomCode(null)
@@ -398,6 +427,7 @@ export const App: React.FC = () => {
         <Lobby
           onCreateRoom={handleCreateRoom}
           onJoinRoom={handleJoinRoom}
+          onCancelRoom={handleCancelRoom}
           onStartLocal={handleStartLocal}
           onStartCpu={handleStartCpu}
           roomCode={roomCode}

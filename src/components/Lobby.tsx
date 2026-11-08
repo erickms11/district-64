@@ -1,10 +1,27 @@
 import React, { useState, useEffect } from 'react'
 import type { CpuDifficulty, Color, TimeControl } from '../types'
-import { Swords, Users, Copy, Check, Share2, ArrowRight, Bot, ChevronDown, Clock, Download } from 'lucide-react'
+import { loadPlayerStats, type PlayerStats } from '../utils/stats'
+import {
+  Swords,
+  Users,
+  Copy,
+  Check,
+  Share2,
+  ArrowRight,
+  ArrowLeft,
+  Bot,
+  ChevronDown,
+  Clock,
+  Download,
+  Trophy,
+  Skull,
+  Flame
+} from 'lucide-react'
 
 interface LobbyProps {
   onCreateRoom: (timeControl: TimeControl) => void
   onJoinRoom: (code: string) => void
+  onCancelRoom: () => void
   onStartLocal: (timeControl: TimeControl) => void
   onStartCpu: (difficulty: CpuDifficulty, playerColor: Color, timeControl: TimeControl) => void
   roomCode: string | null
@@ -15,6 +32,7 @@ interface LobbyProps {
 export const Lobby: React.FC<LobbyProps> = ({
   onCreateRoom,
   onJoinRoom,
+  onCancelRoom,
   onStartLocal,
   onStartCpu,
   roomCode,
@@ -29,6 +47,12 @@ export const Lobby: React.FC<LobbyProps> = ({
   const [selectedTimeControl, setSelectedTimeControl] = useState<TimeControl>(0)
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
   const [canInstall, setCanInstall] = useState(false)
+  const [stats, setStats] = useState<PlayerStats>(() => loadPlayerStats())
+
+  // Refresh stats on mount
+  useEffect(() => {
+    setStats(loadPlayerStats())
+  }, [])
 
   // Listen for PWA installation prompt
   useEffect(() => {
@@ -85,29 +109,81 @@ export const Lobby: React.FC<LobbyProps> = ({
     { label: '⏱️ 10 min', value: 600 }
   ]
 
+  const winRate =
+    stats.totalGames > 0 ? Math.round((stats.wins / stats.totalGames) * 100) : 0
+
   return (
-    <div className="w-full max-w-sm flex flex-col items-center px-4 py-5 select-none">
+    <div className="w-full max-w-sm flex flex-col items-center px-4 py-4 select-none">
       {/* Emblem & Logo Header */}
-      <div className="flex flex-col items-center mb-5 text-center">
-        <div className="relative mb-3">
-          <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-amber-600 via-amber-400 to-amber-200 p-[2.5px] shadow-xl shadow-amber-950/60 animate-pulse">
+      <div className="flex flex-col items-center mb-4 text-center">
+        <div className="relative mb-2">
+          <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-amber-600 via-amber-400 to-amber-200 p-[2px] shadow-lg shadow-amber-950/60 animate-pulse">
             <div className="w-full h-full bg-slate-950 rounded-full flex items-center justify-center border border-amber-600/30">
-              <span className="font-cinzel text-3xl font-black text-transparent bg-clip-text bg-gradient-to-b from-amber-200 via-amber-400 to-amber-600">
+              <span className="font-cinzel text-2xl font-black text-transparent bg-clip-text bg-gradient-to-b from-amber-200 via-amber-400 to-amber-600">
                 64
               </span>
             </div>
           </div>
-          <div className="absolute -bottom-1 -right-1 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 text-[10px] font-black px-1.5 py-0.5 rounded shadow uppercase tracking-wider">
+          <div className="absolute -bottom-1 -right-1 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 text-[9px] font-black px-1.5 py-0.5 rounded shadow uppercase tracking-wider">
             Arena
           </div>
         </div>
 
-        <h1 className="text-3xl font-black font-cinzel tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-500">
+        <h1 className="text-2xl font-black font-cinzel tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-500">
           DISTRICT 64
         </h1>
-        <p className="text-xs text-slate-400 font-medium tracking-wide mt-0.5">
+        <p className="text-[11px] text-slate-400 font-medium tracking-wide">
           Xadrez de Sobrevivência Mobile P2P
         </p>
+      </div>
+
+      {/* Player Stats Card (Registro do Tributo) */}
+      <div className="w-full bg-slate-900/80 border border-slate-800 rounded-2xl p-2.5 mb-3 shadow-sm">
+        <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 mb-2 px-1">
+          <span className="uppercase tracking-wider text-amber-400/90 font-cinzel text-[10px]">
+            Registro do Tributo
+          </span>
+          <span className="text-slate-500 font-mono text-[10px]">
+            {stats.totalGames} {stats.totalGames === 1 ? 'partida' : 'partidas'}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-4 gap-1.5 text-center">
+          {/* Vitórias */}
+          <div className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-1.5 flex flex-col items-center">
+            <div className="flex items-center gap-1 text-emerald-400 text-xs font-bold">
+              <Trophy className="w-3 h-3" />
+              <span>{stats.wins}</span>
+            </div>
+            <span className="text-[9px] text-slate-500 mt-0.5">Vitórias</span>
+          </div>
+
+          {/* Derrotas */}
+          <div className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-1.5 flex flex-col items-center">
+            <div className="flex items-center gap-1 text-red-400 text-xs font-bold">
+              <Skull className="w-3 h-3" />
+              <span>{stats.losses}</span>
+            </div>
+            <span className="text-[9px] text-slate-500 mt-0.5">Derrotas</span>
+          </div>
+
+          {/* Empates */}
+          <div className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-1.5 flex flex-col items-center">
+            <div className="text-slate-300 text-xs font-bold">
+              <span>{stats.draws}</span>
+            </div>
+            <span className="text-[9px] text-slate-500 mt-0.5">Empates</span>
+          </div>
+
+          {/* Taxa de Vitória / Sequência */}
+          <div className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-1.5 flex flex-col items-center">
+            <div className="flex items-center gap-0.5 text-amber-400 text-xs font-bold">
+              {stats.currentStreak > 1 && <Flame className="w-3 h-3 text-orange-400 animate-pulse" />}
+              <span>{winRate}%</span>
+            </div>
+            <span className="text-[9px] text-slate-500 mt-0.5">Taxa</span>
+          </div>
+        </div>
       </div>
 
       {/* PWA Install Button if available */}
@@ -145,19 +221,20 @@ export const Lobby: React.FC<LobbyProps> = ({
       </div>
 
       {/* Main Options */}
-      <div className="w-full flex flex-col gap-3">
+      <div className="w-full flex flex-col gap-2.5">
+        {/* Waiting screen when room is created */}
         {isWaiting && roomCode ? (
-          <div className="bg-slate-900/90 border border-amber-500/50 rounded-2xl p-5 text-center shadow-xl shadow-amber-950/30">
-            <p className="text-xs uppercase tracking-widest text-amber-400 font-bold mb-1">
+          <div className="bg-slate-900/95 border border-amber-500/50 rounded-2xl p-5 text-center shadow-xl shadow-amber-950/30 animate-fade-in">
+            <p className="text-xs uppercase tracking-widest text-amber-400 font-bold mb-1 font-cinzel">
               Arena Criada
             </p>
-            <div className="text-3xl font-black font-mono tracking-widest text-white my-3 py-2 bg-slate-950 rounded-xl border border-slate-800">
+            <div className="text-3xl font-black font-mono tracking-widest text-white my-3 py-2.5 bg-slate-950 rounded-xl border border-slate-800 shadow-inner">
               {roomCode}
             </div>
 
             <p className="text-xs text-slate-400 mb-4">{connectionStatus}</p>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2 mb-3">
               <button
                 onClick={handleCopyLink}
                 className="py-2.5 px-3 bg-slate-800 hover:bg-slate-700 active:scale-95 border border-slate-700 rounded-xl text-xs font-semibold text-slate-200 flex items-center justify-center gap-1.5 transition"
@@ -174,6 +251,15 @@ export const Lobby: React.FC<LobbyProps> = ({
                 Convidar
               </button>
             </div>
+
+            {/* BOTÃO VOLTAR / CANCELAR ARENA */}
+            <button
+              onClick={onCancelRoom}
+              className="w-full py-2.5 px-3 bg-slate-800/80 hover:bg-slate-750 active:scale-95 border border-slate-700/80 rounded-xl text-xs font-semibold text-slate-300 hover:text-white flex items-center justify-center gap-2 transition"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 text-slate-400" />
+              Voltar ao Menu Principal
+            </button>
           </div>
         ) : (
           <>
@@ -304,7 +390,7 @@ export const Lobby: React.FC<LobbyProps> = ({
       </div>
 
       {/* Footer Info */}
-      <div className="mt-6 text-center text-[11px] text-slate-500">
+      <div className="mt-6 text-center text-[10px] text-slate-500">
         PWA Mobile First • Regras FIDE • CPU Offline • WebRTC P2P
       </div>
     </div>

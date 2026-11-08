@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import type { PieceSymbol, Color } from '../types'
 
 interface ChessPieceProps {
@@ -7,12 +7,52 @@ interface ChessPieceProps {
   className?: string
 }
 
+// 🎯 REGISTRO DE PEÇAS PERSONALIZADAS DO DISTRICT 64
+// Quando quiser adicionar modelos/artes customizadas, basta mapear aqui:
+export const CUSTOM_PIECES: Record<string, string> = {
+  // 'w_k': '/pieces/katniss_king.png',
+  // 'b_k': '/pieces/president_snow.png',
+}
+
 export const ChessPiece: React.FC<ChessPieceProps> = ({ type, color, className = 'w-full h-full' }) => {
   const isWhite = color === 'w'
+  const pieceKey = `${color}_${type}`
+  const customImage = CUSTOM_PIECES[pieceKey]
+  const [imgError, setImgError] = useState(false)
 
-  // Refined District 64 color palette
-  // White pieces: polished tribute marble with warm gold rim
-  // Black pieces: obsidian/matte armor with ember accent
+  // Se houver uma arte personalizada (como a Katniss), renderiza o token customizado
+  if (customImage && !imgError) {
+    return (
+      <div className={`relative flex items-center justify-center p-0.5 ${className}`}>
+        <div
+          className={`relative w-full h-full rounded-full overflow-hidden border-2 transition-transform duration-150 ${
+            isWhite
+              ? 'border-amber-400 shadow-lg shadow-amber-950/60 ring-1 ring-amber-300/50'
+              : 'border-red-600 shadow-lg shadow-black/80 ring-1 ring-red-500/50'
+          }`}
+          style={{
+            filter: 'drop-shadow(0px 2px 4px rgba(0,0,0,0.6))',
+          }}
+        >
+          <img
+            src={customImage}
+            alt={`${color} ${type}`}
+            onError={() => setImgError(true)}
+            className="w-full h-full object-cover select-none pointer-events-none"
+            draggable={false}
+          />
+          {/* Indicador sutil de patente (coroa dourada para Rei) */}
+          {type === 'k' && (
+            <div className="absolute top-0 inset-x-0 flex justify-center pointer-events-none">
+              <span className="text-[10px] leading-none drop-shadow-md">👑</span>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // Cores do conjunto vetorial clássico Staunton do District 64
   const fill = isWhite ? '#ffffff' : '#1e2530'
   const stroke = isWhite ? '#1e293b' : '#f8fafc'
   const gold = '#f59e0b'
@@ -64,11 +104,9 @@ export const ChessPiece: React.FC<ChessPieceProps> = ({ type, color, className =
               strokeLinecap="round"
             />
 
-            {/* CRUZ MAJESTOSA DO REI (Grande, preenchida e imediatamente reconhecível) */}
+            {/* CRUZ MAJESTOSA DO REI */}
             <g transform="translate(0, -1)">
-              {/* Brilho dourado atrás da cruz */}
               <circle cx="24" cy="6.5" r="4.5" fill={gold} opacity="0.3" />
-              {/* Barra vertical da cruz */}
               <rect
                 x="22.2"
                 y="2"
@@ -79,7 +117,6 @@ export const ChessPiece: React.FC<ChessPieceProps> = ({ type, color, className =
                 stroke={stroke}
                 strokeWidth="1.2"
               />
-              {/* Barra horizontal da cruz */}
               <rect
                 x="19.5"
                 y="4.2"
@@ -90,7 +127,6 @@ export const ChessPiece: React.FC<ChessPieceProps> = ({ type, color, className =
                 stroke={stroke}
                 strokeWidth="1.2"
               />
-              {/* Centro de joia da cruz */}
               <circle cx="24" cy="6" r="1.2" fill={isWhite ? '#ffffff' : gold} />
             </g>
           </g>
@@ -99,7 +135,6 @@ export const ChessPiece: React.FC<ChessPieceProps> = ({ type, color, className =
       case 'q': // RAINHA (Queen) - Coroa elegante com 5 pontas e pérolas
         return (
           <g>
-            {/* Base */}
             <path
               d="M12 41 h24 c1.2 0 1.8 1.5 1.8 2.5 H10.2 c0-1 0.6-2.5 1.8-2.5 z"
               fill={fill}
@@ -112,14 +147,12 @@ export const ChessPiece: React.FC<ChessPieceProps> = ({ type, color, className =
               stroke={stroke}
               strokeWidth="1.5"
             />
-            {/* Tiara e Corpo Curvado */}
             <path
               d="M14.5 37 C16 30 18 27 19.5 24 C17 23 15 20 15 17.5 L19.5 22 L24 14.5 L28.5 22 L33 17.5 C33 20 31 23 28.5 24 C30 27 32 30 33.5 37 Z"
               fill={fill}
               stroke={stroke}
               strokeWidth="1.5"
             />
-            {/* 5 Pérolas da Coroa */}
             <circle cx="15" cy="17" r="2" fill={gold} stroke={stroke} strokeWidth="1" />
             <circle cx="19.5" cy="21" r="1.7" fill={gold} stroke={stroke} strokeWidth="1" />
             <circle cx="24" cy="13.5" r="2.3" fill={gold} stroke={stroke} strokeWidth="1" />
@@ -131,7 +164,6 @@ export const ChessPiece: React.FC<ChessPieceProps> = ({ type, color, className =
       case 'b': // BISPO (Bishop) - Mitra eclesiástica com fenda e cruz de topo
         return (
           <g>
-            {/* Base */}
             <path
               d="M13 41 h22 c1 0 1.8 1.5 1.8 2.5 H11.2 c0-1 0.8-2.5 1.8-2.5 z"
               fill={fill}
@@ -144,28 +176,24 @@ export const ChessPiece: React.FC<ChessPieceProps> = ({ type, color, className =
               stroke={stroke}
               strokeWidth="1.5"
             />
-            {/* Corpo / Mitra */}
             <path
               d="M15 37 C16 30 17 26 24 19 C31 26 32 30 33 37 Z"
               fill={fill}
               stroke={stroke}
               strokeWidth="1.5"
             />
-            {/* Cabeça do Bispo com fenda diagonal */}
             <path
               d="M17.5 26 C16.5 20 19 14 24 11 C29 14 31.5 20 30.5 26 C29 30 19 30 17.5 26 Z"
               fill={fill}
               stroke={stroke}
               strokeWidth="1.5"
             />
-            {/* Fenda clássica */}
             <path
               d="M21 16 L27 22"
               stroke={stroke}
               strokeWidth="1.8"
               strokeLinecap="round"
             />
-            {/* Esfera do topo */}
             <circle cx="24" cy="9.5" r="2" fill={gold} stroke={stroke} strokeWidth="1" />
           </g>
         )
@@ -173,7 +201,6 @@ export const ChessPiece: React.FC<ChessPieceProps> = ({ type, color, className =
       case 'n': // CAVALO (Knight) - Cabeça e crina estilizada de caçador
         return (
           <g>
-            {/* Base */}
             <path
               d="M13 41 h22 c1 0 1.8 1.5 1.8 2.5 H11.2 c0-1 0.8-2.5 1.8-2.5 z"
               fill={fill}
@@ -186,23 +213,19 @@ export const ChessPiece: React.FC<ChessPieceProps> = ({ type, color, className =
               stroke={stroke}
               strokeWidth="1.5"
             />
-            {/* Perfil do Cavalo */}
             <path
               d="M15 37 C15 33 16 30 19 28 C17 27 15 24 15 21 C15 16 19 12 25 11 C28 11 31 12.5 32 15 C33 17 32 19 30 20 C29 20.5 28 20.5 27 21 C27 23 29 24 31 26 C33 28 33 32 33 37 Z"
               fill={fill}
               stroke={stroke}
               strokeWidth="1.5"
             />
-            {/* Focinho e queixo */}
             <path
               d="M15 21 C14 23 16 26 19 26.5 L19 28"
               fill={fill}
               stroke={stroke}
               strokeWidth="1.5"
             />
-            {/* Olho guerreiro */}
             <circle cx="23" cy="16.5" r="1.5" fill={gold} />
-            {/* Detalhe da crina */}
             <path
               d="M27 13 C26 15 27 18 29 19"
               stroke={stroke}
@@ -215,7 +238,6 @@ export const ChessPiece: React.FC<ChessPieceProps> = ({ type, color, className =
       case 'r': // TORRE (Rook) - Castelo de muralha com ameias bem definidas
         return (
           <g>
-            {/* Base */}
             <path
               d="M12 41 h24 c1.2 0 1.8 1.5 1.8 2.5 H10.2 c0-1 0.6-2.5 1.8-2.5 z"
               fill={fill}
@@ -228,28 +250,24 @@ export const ChessPiece: React.FC<ChessPieceProps> = ({ type, color, className =
               stroke={stroke}
               strokeWidth="1.5"
             />
-            {/* Coluna Central */}
             <path
               d="M16 37 L17.5 22 H30.5 L32 37 Z"
               fill={fill}
               stroke={stroke}
               strokeWidth="1.5"
             />
-            {/* Peitoril */}
             <path
               d="M14.5 19.5 h19 v2.5 h-19 z"
               fill={fill}
               stroke={stroke}
               strokeWidth="1.5"
             />
-            {/* Ameias da Torre (Castelo forte) */}
             <path
               d="M14 13.5 h4.5 v3 h3 v-3 h5 v3 h3 v-3 h4.5 v6 h-20 z"
               fill={fill}
               stroke={stroke}
               strokeWidth="1.5"
             />
-            {/* Linha de janela de tiro */}
             <rect x="22.5" y="26" width="3" height="5" rx="1.5" fill={stroke} opacity="0.7" />
           </g>
         )
@@ -257,7 +275,6 @@ export const ChessPiece: React.FC<ChessPieceProps> = ({ type, color, className =
       case 'p': // PEÃO (Pawn) - Esfera compacta no topo e gola arredondada
         return (
           <g>
-            {/* Base */}
             <path
               d="M14 41 h20 c1 0 1.5 1.5 1.5 2.5 H12.5 c0-1 0.5-2.5 1.5-2.5 z"
               fill={fill}
@@ -270,16 +287,13 @@ export const ChessPiece: React.FC<ChessPieceProps> = ({ type, color, className =
               stroke={stroke}
               strokeWidth="1.5"
             />
-            {/* Corpo cônico */}
             <path
               d="M17.5 37 C18.5 30 20 27 21 24 H27 C28 27 29.5 30 30.5 37 Z"
               fill={fill}
               stroke={stroke}
               strokeWidth="1.5"
             />
-            {/* Gola / Anel */}
             <ellipse cx="24" cy="23.5" rx="4.5" ry="1.5" fill={fill} stroke={stroke} strokeWidth="1.2" />
-            {/* Cabeça esférica */}
             <circle
               cx="24"
               cy="16"
@@ -288,7 +302,6 @@ export const ChessPiece: React.FC<ChessPieceProps> = ({ type, color, className =
               stroke={stroke}
               strokeWidth="1.5"
             />
-            {/* Toque de luz dourado sutil */}
             <circle cx="22.5" cy="14.5" r="1.5" fill={gold} opacity="0.6" />
           </g>
         )
