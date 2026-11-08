@@ -1,7 +1,7 @@
 import React from 'react'
 import type { Color, PieceSymbol, GameMode, CpuDifficulty } from '../types'
 import { ChessPiece } from './ChessPiece'
-import { Volume2, VolumeX, RotateCw, Flag, Home, Clock } from 'lucide-react'
+import { RotateCw, Flag, Home, Clock } from 'lucide-react'
 
 interface GameHeaderProps {
   mode: GameMode
@@ -13,8 +13,6 @@ interface GameHeaderProps {
   timeRemaining?: number
   capturedByOpponent: PieceSymbol[]
   capturedByMe: PieceSymbol[]
-  isMuted: boolean
-  onToggleMute: () => void
   onRotateBoard: () => void
   onSurrender: () => void
   onExit: () => void
@@ -35,8 +33,6 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
   difficulty,
   timeRemaining,
   capturedByOpponent,
-  isMuted,
-  onToggleMute,
   onRotateBoard,
   onSurrender,
   onExit
@@ -88,13 +84,6 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
             title="Girar Tabuleiro"
           >
             <RotateCw className="w-4 h-4" />
-          </button>
-          <button
-            onClick={onToggleMute}
-            className="p-2 rounded-xl bg-[#0e1017] hover:bg-[#151824] text-amber-200/80 hover:text-white border border-amber-900/40 shadow"
-            title={isMuted ? 'Ativar Som' : 'Desativar Som'}
-          >
-            {isMuted ? <VolumeX className="w-4 h-4 text-red-400" /> : <Volume2 className="w-4 h-4 text-amber-400" />}
           </button>
           <button
             onClick={onSurrender}

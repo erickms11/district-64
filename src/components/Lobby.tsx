@@ -11,22 +11,25 @@ import {
   ArrowRight,
   ArrowLeft,
   Bot,
-  ChevronDown,
-  Clock,
   Download,
   Trophy,
   Skull,
   Flame,
   QrCode,
-  Sparkles
+  Sparkles,
+  Settings2
 } from 'lucide-react'
 
 interface LobbyProps {
-  onCreateRoom: (timeControl: TimeControl) => void
+  onCreateRoom: () => void
   onJoinRoom: (code: string) => void
   onCancelRoom: () => void
-  onStartLocal: (timeControl: TimeControl) => void
-  onStartCpu: (difficulty: CpuDifficulty, playerColor: Color, timeControl: TimeControl) => void
+  onStartLocal: () => void
+  onStartCpu: () => void
+  onOpenSettings: () => void
+  timeControl: TimeControl
+  cpuDifficulty: CpuDifficulty
+  cpuPlayerColor: Color
   roomCode: string | null
   connectionStatus: string
   isWaiting: boolean
@@ -38,16 +41,16 @@ export const Lobby: React.FC<LobbyProps> = ({
   onCancelRoom,
   onStartLocal,
   onStartCpu,
+  onOpenSettings,
+  timeControl,
+  cpuDifficulty,
+  cpuPlayerColor,
   roomCode,
   connectionStatus,
   isWaiting
 }) => {
   const [inputCode, setInputCode] = useState('')
   const [copied, setCopied] = useState(false)
-  const [showCpuOptions, setShowCpuOptions] = useState(false)
-  const [selectedDifficulty, setSelectedDifficulty] = useState<CpuDifficulty>('medium')
-  const [selectedColor, setSelectedColor] = useState<Color>('w')
-  const [selectedTimeControl, setSelectedTimeControl] = useState<TimeControl>(0)
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
   const [canInstall, setCanInstall] = useState(false)
   const [stats, setStats] = useState<PlayerStats>(() => loadPlayerStats())
@@ -125,18 +128,37 @@ export const Lobby: React.FC<LobbyProps> = ({
     }
   }
 
-  const timeControlOptions: { label: string; value: TimeControl }[] = [
-    { label: '♾️ Sem Tempo', value: 0 },
-    { label: '⚡ 3 min', value: 180 },
-    { label: '🔥 5 min', value: 300 },
-    { label: '⏱️ 10 min', value: 600 }
-  ]
-
   const winRate =
     stats.totalGames > 0 ? Math.round((stats.wins / stats.totalGames) * 100) : 0
 
+  const getDifficultyLabel = () => {
+    if (cpuDifficulty === 'easy') return 'Recruta'
+    if (cpuDifficulty === 'medium') return 'Pacificador'
+    return 'Capital Elite'
+  }
+
+  const getTimeLabel = () => {
+    if (timeControl === 0) return 'Sem Tempo'
+    return `${Math.round(timeControl / 60)} min`
+  }
+
   return (
     <div className="w-full max-w-sm flex flex-col items-center px-4 py-4 select-none">
+      {/* Top Header Actions (Settings & Title) */}
+      <div className="w-full flex items-center justify-between mb-2 px-1">
+        <span className="text-[10px] font-mono tracking-widest text-amber-500/70 uppercase">
+          PANEM • DISTRICT 64
+        </span>
+        <button
+          onClick={onOpenSettings}
+          className="p-2 rounded-xl bg-[#0e1017] hover:bg-[#181c2b] text-amber-300 border border-amber-900/40 shadow-sm flex items-center gap-1.5 text-xs font-cinzel transition"
+          title="Ajustes da Arena"
+        >
+          <Settings2 className="w-4 h-4 text-amber-400" />
+          <span className="text-[11px] font-bold">Ajustes</span>
+        </button>
+      </div>
+
       {/* Emblem & Logo Header */}
       <div className="flex flex-col items-center mb-4 text-center">
         <div className="relative mb-2">
@@ -218,27 +240,14 @@ export const Lobby: React.FC<LobbyProps> = ({
         </button>
       )}
 
-      {/* Global Time Control Selector */}
-      <div className="w-full bg-[#0e1017]/90 border border-amber-600/30 rounded-2xl p-2.5 mb-3 shadow-md">
-        <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-200/80 mb-1.5 px-1 font-cinzel">
-          <Clock className="w-3.5 h-3.5 text-amber-400" />
-          <span>Ampulheta da Arena:</span>
-        </div>
-        <div className="grid grid-cols-4 gap-1">
-          {timeControlOptions.map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => setSelectedTimeControl(opt.value)}
-              className={`py-1.5 text-[11px] font-bold rounded-lg border transition ${
-                selectedTimeControl === opt.value
-                  ? 'bg-gradient-to-r from-amber-600/40 to-orange-600/40 border-amber-400 text-amber-200 shadow-sm'
-                  : 'bg-[#08090e] border-slate-800/80 text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
+      {/* Active Settings Summary Pills */}
+      <div className="w-full flex items-center justify-between px-2 py-1.5 bg-[#0e1017]/60 border border-amber-900/30 rounded-xl mb-3 text-[10px] text-amber-200/80">
+        <span className="flex items-center gap-1">
+          ⏱️ Ampulheta: <strong className="text-amber-300">{getTimeLabel()}</strong>
+        </span>
+        <span className="flex items-center gap-1">
+          🤖 CPU: <strong className="text-amber-300">{getDifficultyLabel()}</strong>
+        </span>
       </div>
 
       {/* Main Options */}
@@ -308,7 +317,7 @@ export const Lobby: React.FC<LobbyProps> = ({
           <>
             {/* Create Room Button */}
             <button
-              onClick={() => onCreateRoom(selectedTimeControl)}
+              onClick={onCreateRoom}
               className="group relative w-full py-3.5 px-4 bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 hover:from-amber-500 hover:via-orange-500 hover:to-amber-600 active:scale-98 rounded-2xl font-bold text-white shadow-xl shadow-amber-950/50 flex items-center justify-between border border-amber-400/40 transition overflow-hidden"
             >
               <div className="flex items-center gap-3">
@@ -317,7 +326,7 @@ export const Lobby: React.FC<LobbyProps> = ({
                 </div>
                 <div className="text-left">
                   <div className="text-sm font-extrabold tracking-wide font-cinzel">Criar Arena Online</div>
-                  <div className="text-[11px] text-amber-100/80 font-normal">Gere um código e enfrente outro tributo</div>
+                  <div className="text-[11px] text-amber-100/80 font-normal">Gere um código e enfrente outro tributo (P2P)</div>
                 </div>
               </div>
               <ArrowRight className="w-4 h-4 text-amber-200 group-hover:translate-x-1 transition-transform" />
@@ -345,84 +354,28 @@ export const Lobby: React.FC<LobbyProps> = ({
               </div>
             </div>
 
-            {/* Play vs CPU Section */}
-            <div className="bg-[#0e1017]/90 border border-amber-600/30 rounded-2xl overflow-hidden transition-all shadow-md">
-              <button
-                onClick={() => setShowCpuOptions((prev) => !prev)}
-                className="w-full py-3 px-4 flex items-center justify-between text-left hover:bg-[#141724] transition"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-[#08090e] rounded-xl text-amber-400 border border-amber-900/40">
-                    <Bot className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-bold text-slate-200 font-cinzel">Batalhar Contra a Capital (CPU)</div>
-                    <div className="text-[11px] text-slate-400">Desafie os Pacificadores offline</div>
+            {/* Play vs CPU Button (Direct Launch using configured Settings) */}
+            <button
+              onClick={onStartCpu}
+              className="w-full py-3.5 px-4 bg-[#0e1017]/90 hover:bg-[#141724] active:scale-98 border border-amber-600/30 rounded-2xl text-left flex items-center justify-between shadow-md transition"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-[#08090e] rounded-xl text-amber-400 border border-amber-900/40">
+                  <Bot className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-slate-200 font-cinzel">Batalhar Contra a Capital (CPU)</div>
+                  <div className="text-[11px] text-slate-400">
+                    Modo {getDifficultyLabel()} • Jogar como {cpuPlayerColor === 'w' ? 'Distrito' : 'Capital'}
                   </div>
                 </div>
-                <ChevronDown className={`w-4 h-4 text-amber-400 transition-transform ${showCpuOptions ? 'rotate-180' : ''}`} />
-              </button>
-
-              {showCpuOptions && (
-                <div className="p-3 pt-0 border-t border-amber-900/30 flex flex-col gap-2.5 mt-2">
-                  <div>
-                    <label className="text-[11px] font-semibold text-slate-400 mb-1 block">Nível do Inimigo</label>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {(['easy', 'medium', 'hard'] as CpuDifficulty[]).map((diff) => (
-                        <button
-                          key={diff}
-                          onClick={() => setSelectedDifficulty(diff)}
-                          className={`py-1.5 text-xs font-bold rounded-lg border transition ${
-                            selectedDifficulty === diff
-                              ? 'bg-amber-500/20 border-amber-500 text-amber-300'
-                              : 'bg-[#08090e] border-slate-800 text-slate-400 hover:text-slate-200'
-                          }`}
-                        >
-                          {diff === 'easy' ? 'Recruta' : diff === 'medium' ? 'Pacificador' : 'Capital Elite'}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] font-semibold text-slate-400 mb-1 block">Sua Facção</label>
-                    <div className="grid grid-cols-2 gap-1.5">
-                      <button
-                        onClick={() => setSelectedColor('w')}
-                        className={`py-1.5 text-xs font-bold rounded-lg border transition ${
-                          selectedColor === 'w'
-                            ? 'bg-amber-500/20 border-amber-500 text-amber-300'
-                            : 'bg-[#08090e] border-slate-800 text-slate-400'
-                        }`}
-                      >
-                        Distritos (Brancas)
-                      </button>
-                      <button
-                        onClick={() => setSelectedColor('b')}
-                        className={`py-1.5 text-xs font-bold rounded-lg border transition ${
-                          selectedColor === 'b'
-                            ? 'bg-amber-500/20 border-amber-500 text-amber-300'
-                            : 'bg-[#08090e] border-slate-800 text-slate-400'
-                        }`}
-                      >
-                        A Capital (Pretas)
-                      </button>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => onStartCpu(selectedDifficulty, selectedColor, selectedTimeControl)}
-                    className="w-full mt-1 py-2.5 bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 hover:from-amber-500 active:scale-98 rounded-xl text-xs font-bold text-white shadow-md transition"
-                  >
-                    Entrar na Arena Contra a CPU
-                  </button>
-                </div>
-              )}
-            </div>
+              </div>
+              <ArrowRight className="w-4 h-4 text-amber-400/70" />
+            </button>
 
             {/* Local 2P */}
             <button
-              onClick={() => onStartLocal(selectedTimeControl)}
+              onClick={onStartLocal}
               className="w-full py-3 px-4 bg-[#0e1017]/80 hover:bg-[#141724] active:scale-98 border border-amber-900/30 rounded-2xl text-xs font-bold text-slate-300 flex items-center justify-center gap-2.5 transition"
             >
               <Users className="w-4 h-4 text-amber-400/80" />

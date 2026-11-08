@@ -1,26 +1,33 @@
 import React, { useState } from 'react'
 import type { PieceSymbol, Color } from '../types'
 
+export type PieceTheme = 'staunton' | 'characters'
+
 interface ChessPieceProps {
   type: PieceSymbol
   color: Color
+  theme?: PieceTheme
   className?: string
 }
 
-// 🎯 REGISTRO DE PEÇAS PERSONALIZADAS DO DISTRICT 64
-// Quando quiser adicionar modelos/artes customizadas, basta mapear aqui:
-export const CUSTOM_PIECES: Record<string, string> = {
-  // 'w_k': '/pieces/katniss_king.png',
-  // 'b_k': '/pieces/president_snow.png',
+// 🎯 REGISTRO DE PEÇAS TEMÁTICAS DE PERSONAGENS DO DISTRICT 64
+export const CHARACTER_PIECES: Record<string, string> = {
+  'w_k': '/pieces/katniss_king.png',   // Katniss Everdeen como Líder dos Distritos
+  'b_k': '/pieces/president_snow.png', // Presidente Snow como Líder da Capital
 }
 
-export const ChessPiece: React.FC<ChessPieceProps> = ({ type, color, className = 'w-full h-full' }) => {
+export const ChessPiece: React.FC<ChessPieceProps> = ({
+  type,
+  color,
+  theme = 'staunton',
+  className = 'w-full h-full'
+}) => {
   const isWhite = color === 'w'
   const pieceKey = `${color}_${type}`
-  const customImage = CUSTOM_PIECES[pieceKey]
+  const customImage = theme === 'characters' ? CHARACTER_PIECES[pieceKey] : null
   const [imgError, setImgError] = useState(false)
 
-  // Se houver uma arte personalizada (como a Katniss), renderiza o token customizado
+  // Se o tema "Personagens" estiver ativo e a peça tiver uma imagem
   if (customImage && !imgError) {
     return (
       <div className={`relative flex items-center justify-center p-0.5 ${className}`}>
@@ -41,7 +48,6 @@ export const ChessPiece: React.FC<ChessPieceProps> = ({ type, color, className =
             className="w-full h-full object-cover select-none pointer-events-none"
             draggable={false}
           />
-          {/* Indicador sutil de patente (coroa dourada para Rei) */}
           {type === 'k' && (
             <div className="absolute top-0 inset-x-0 flex justify-center pointer-events-none">
               <span className="text-[10px] leading-none drop-shadow-md">👑</span>
@@ -52,7 +58,7 @@ export const ChessPiece: React.FC<ChessPieceProps> = ({ type, color, className =
     )
   }
 
-  // Cores do conjunto vetorial clássico Staunton do District 64
+  // Conjunto Clássico Staunton Vetorial do District 64
   const fill = isWhite ? '#ffffff' : '#1e2530'
   const stroke = isWhite ? '#1e293b' : '#f8fafc'
   const gold = '#f59e0b'
@@ -66,7 +72,6 @@ export const ChessPiece: React.FC<ChessPieceProps> = ({ type, color, className =
       case 'k': // REI (King) - Cruz grande e marcante, coroa imperial imponente
         return (
           <g>
-            {/* Base sólida do Rei */}
             <path
               d="M11 41 h26 c1.5 0 2 1.5 2 2.5 H9 c0-1 0.5-2.5 2-2.5 z"
               fill={fill}
@@ -79,16 +84,12 @@ export const ChessPiece: React.FC<ChessPieceProps> = ({ type, color, className =
               stroke={stroke}
               strokeWidth="1.5"
             />
-
-            {/* Corpo e Manto Real */}
             <path
               d="M14 36.5 C15 28 17 25 19 22 C17 21 16 19 16 16.5 C16 13 18.5 11 24 11 C29.5 11 32 13 32 16.5 C32 19 31 21 29 22 C31 25 33 28 34 36.5 Z"
               fill={fill}
               stroke={stroke}
               strokeWidth="1.5"
             />
-
-            {/* Ornamento do Peito */}
             <path
               d="M19 23 C22 25 26 25 29 23"
               stroke={stroke}
@@ -103,7 +104,6 @@ export const ChessPiece: React.FC<ChessPieceProps> = ({ type, color, className =
               fill="none"
               strokeLinecap="round"
             />
-
             {/* CRUZ MAJESTOSA DO REI */}
             <g transform="translate(0, -1)">
               <circle cx="24" cy="6.5" r="4.5" fill={gold} opacity="0.3" />

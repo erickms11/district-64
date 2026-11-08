@@ -1,6 +1,6 @@
 import React from 'react'
 import type { Chess, Square, Color, Move } from 'chess.js'
-import { ChessPiece } from './ChessPiece'
+import { ChessPiece, type PieceTheme } from './ChessPiece'
 import { getBoardSquares } from '../utils/chess'
 
 interface BoardProps {
@@ -8,6 +8,7 @@ interface BoardProps {
   playerColor?: Color
   isFlipped: boolean
   isMyTurn?: boolean
+  pieceTheme?: PieceTheme
   selectedSquare: Square | null
   validMoves: Move[]
   lastMove: { from: Square; to: Square } | null
@@ -17,6 +18,7 @@ interface BoardProps {
 export const Board: React.FC<BoardProps> = ({
   chess,
   isFlipped,
+  pieceTheme = 'staunton',
   selectedSquare,
   validMoves,
   lastMove,
@@ -95,7 +97,7 @@ export const Board: React.FC<BoardProps> = ({
                     isSelected ? 'scale-110' : ''
                   }`}
                 >
-                  <ChessPiece type={piece.type} color={piece.color} />
+                  <ChessPiece type={piece.type} color={piece.color} theme={pieceTheme} />
                 </div>
               )}
 

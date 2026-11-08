@@ -4,10 +4,9 @@ import type { Square, PieceSymbol, Move } from 'chess.js'
 import type { GameMode, Color, GameStatus, PeerMessage, CpuDifficulty, TimeControl } from './types'
 import { evaluateGameStatus, computeCapturedPieces } from './utils/chess'
 import { getBestCpuMove } from './utils/ai'
-import { recordMatchResult } from './utils/stats'
+import { recordMatchResult, resetPlayerStats } from './utils/stats'
 import { peerService } from './services/peerService'
 import type { ConnectionState } from './services/peerService'
-import { soundManager } from './utils/audio'
 import { haptics } from './utils/haptics'
 import { Lobby } from './components/Lobby'
 import { Board } from './components/Board'
@@ -16,12 +15,17 @@ import { GameFooter } from './components/GameFooter'
 import { MoveHistory } from './components/MoveHistory'
 import { PromotionModal } from './components/PromotionModal'
 import { GameOverModal } from './components/GameOverModal'
+import { SettingsModal } from './components/SettingsModal'
 
 export const App: React.FC = () => {
   // Navigation / Mode
   const [view, setView] = useState<'lobby' | 'game'>('lobby')
   const [gameMode, setGameMode] = useState<GameMode>('local')
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+
+  // Configurable Settings (Moved to Settings Menu)
   const [cpuDifficulty, setCpuDifficulty] = useState<CpuDifficulty>('medium')
+  const [cpuPlayerColor, setCpuPlayerColor] = useState<Color>('w')
   const [timeControl, setTimeControl] = useState<TimeControl>(0)
   const [clocks, setClocks] = useState<{ w: number; b: number }>({ w: 0, b: 0 })
 
@@ -40,7 +44,6 @@ export const App: React.FC = () => {
   const [lastMove, setLastMove] = useState<{ from: Square; to: Square } | null>(null)
   const [pendingPromotion, setPendingPromotion] = useState<{ from: Square; to: Square } | null>(null)
   const [gameStatus, setGameStatus] = useState<GameStatus>(() => evaluateGameStatus(chess))
-  const [isMuted, setIsMuted] = useState(false)
 
   const isCpuThinking = useRef(false)
   const hasRecordedStats = useRef(false)
@@ -52,7 +55,6 @@ export const App: React.FC = () => {
     setGameStatus(status)
 
     if (status.inCheck) {
-      soundManager.playCheck()
       haptics.check()
     }
   }, [chess])
@@ -87,10 +89,8 @@ export const App: React.FC = () => {
           setValidMoves([])
 
           if (moveResult.captured) {
-            soundManager.playCapture()
             haptics.capture()
           } else {
-            soundManager.playMove()
             haptics.move()
           }
 
@@ -124,7 +124,6 @@ export const App: React.FC = () => {
             reason: 'timeout',
             inCheck: false
           })
-          soundManager.playFallenCannon()
           haptics.fallen()
 
           if (gameMode === 'online') {
@@ -211,7 +210,6 @@ export const App: React.FC = () => {
             reason: 'surrender',
             inCheck: false
           })
-          soundManager.playFallenCannon()
           haptics.fallen()
         } else if (msg.type === 'TIMEOUT') {
           setGameStatus({
@@ -220,7 +218,6 @@ export const App: React.FC = () => {
             reason: 'timeout',
             inCheck: false
           })
-          soundManager.playFallenCannon()
           haptics.fallen()
         }
       }
@@ -239,10 +236,9 @@ export const App: React.FC = () => {
   }, [chess, applyMove, playerColor, timeControl, updateGameState])
 
   // Host: Create Arena
-  const handleCreateRoom = (tc: TimeControl) => {
+  const handleCreateRoom = () => {
     setGameMode('online')
-    setTimeControl(tc)
-    setClocks({ w: tc, b: tc })
+    setClocks({ w: timeControl, b: timeControl })
     const code = peerService.createRoom()
     setRoomCode(code)
   }
@@ -262,16 +258,14 @@ export const App: React.FC = () => {
     peerService.joinRoom(code)
   }
 
-  // CPU Game
-  const handleStartCpu = (difficulty: CpuDifficulty, chosenColor: Color, tc: TimeControl) => {
+  // CPU Game (uses configured settings)
+  const handleStartCpu = () => {
     hasRecordedStats.current = false
     isCpuThinking.current = false
     setGameMode('cpu')
-    setCpuDifficulty(difficulty)
-    setPlayerColor(chosenColor)
-    setIsFlipped(chosenColor === 'b')
-    setTimeControl(tc)
-    setClocks({ w: tc, b: tc })
+    setPlayerColor(cpuPlayerColor)
+    setIsFlipped(cpuPlayerColor === 'b')
+    setClocks({ w: timeControl, b: timeControl })
     chess.reset()
     setLastMove(null)
     setSelectedSquare(null)
@@ -281,13 +275,12 @@ export const App: React.FC = () => {
   }
 
   // Local Pass & Play
-  const handleStartLocal = (tc: TimeControl) => {
+  const handleStartLocal = () => {
     hasRecordedStats.current = false
     setGameMode('local')
     setPlayerColor('w')
     setIsFlipped(false)
-    setTimeControl(tc)
-    setClocks({ w: tc, b: tc })
+    setClocks({ w: timeControl, b: timeControl })
     chess.reset()
     setLastMove(null)
     setSelectedSquare(null)
@@ -339,19 +332,11 @@ export const App: React.FC = () => {
       reason: 'surrender',
       inCheck: false
     })
-    soundManager.playFallenCannon()
     haptics.fallen()
 
     if (gameMode === 'online') {
       peerService.sendMessage({ type: 'SURRENDER' })
     }
-  }
-
-  // Sound toggle
-  const handleToggleMute = () => {
-    const next = !isMuted
-    setIsMuted(next)
-    soundManager.setMuted(next)
   }
 
   // Board Square Click logic
@@ -422,7 +407,7 @@ export const App: React.FC = () => {
   const opponentColor: Color = playerColor === 'w' ? 'b' : 'w'
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-between p-3 select-none overflow-hidden touch-manipulation">
+    <div className="min-h-screen bg-[#07080c] text-slate-100 flex flex-col items-center justify-between p-3 select-none overflow-hidden touch-manipulation">
       {view === 'lobby' ? (
         <Lobby
           onCreateRoom={handleCreateRoom}
@@ -430,6 +415,10 @@ export const App: React.FC = () => {
           onCancelRoom={handleCancelRoom}
           onStartLocal={handleStartLocal}
           onStartCpu={handleStartCpu}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          timeControl={timeControl}
+          cpuDifficulty={cpuDifficulty}
+          cpuPlayerColor={cpuPlayerColor}
           roomCode={roomCode}
           connectionStatus={connectionStatus}
           isWaiting={connectionState === 'waiting'}
@@ -447,8 +436,6 @@ export const App: React.FC = () => {
             timeRemaining={timeControl > 0 ? clocks[opponentColor] : undefined}
             capturedByOpponent={playerColor === 'w' ? captured.w : captured.b}
             capturedByMe={playerColor === 'w' ? captured.b : captured.w}
-            isMuted={isMuted}
-            onToggleMute={handleToggleMute}
             onRotateBoard={() => setIsFlipped((prev) => !prev)}
             onSurrender={handleSurrender}
             onExit={handleExit}
@@ -499,6 +486,19 @@ export const App: React.FC = () => {
           )}
         </div>
       )}
+
+      {/* Dedicated Settings Modal */}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        timeControl={timeControl}
+        onSelectTimeControl={(tc) => setTimeControl(tc)}
+        cpuDifficulty={cpuDifficulty}
+        onSelectCpuDifficulty={(diff) => setCpuDifficulty(diff)}
+        cpuPlayerColor={cpuPlayerColor}
+        onSelectCpuPlayerColor={(color) => setCpuPlayerColor(color)}
+        onResetStats={() => resetPlayerStats()}
+      />
     </div>
   )
 }
