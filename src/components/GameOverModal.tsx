@@ -29,39 +29,45 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
     soundManager.playFallenCannon()
     if (isWinner && !isDraw) {
       confetti({
-        particleCount: 100,
-        spread: 70,
+        particleCount: 110,
+        spread: 75,
         origin: { y: 0.6 },
-        colors: ['#f59e0b', '#fbbf24', '#d97706', '#ef4444']
+        colors: ['#f59e0b', '#ea580c', '#fbbf24', '#dc2626']
       })
     }
   }, [isWinner, isDraw])
 
   const getTitle = () => {
-    if (isDraw) return 'Tregua na Arena'
+    if (isDraw) return 'Trégua na Arena'
     if (isOnline) {
-      return isWinner ? 'Sobrevivente da Arena!' : 'Tributo Caído'
+      return isWinner ? 'Vitorioso dos Jogos!' : 'Tributo Caído'
     }
-    return winner === 'w' ? 'Vitória das Brancas (Distritos)' : 'Vitória das Pretas (Capital)'
+    return winner === 'w' ? 'Vitória do Distrito 12' : 'A Capital Prevaleceu'
   }
 
   const getSubtitle = () => {
     if (reason === 'checkmate') return 'Xeque-mate definitivo nos 64 distritos.'
-    if (reason === 'timeout') return 'O tempo da ampulheta esgotou!'
-    if (reason === 'stalemate') return 'Empate por afogamento (Stalemate).'
-    if (reason === 'surrender') return 'Rendição aceita na arena.'
-    return 'Jogo finalizado.'
+    if (reason === 'timeout') return 'O tempo da ampulheta esgotou na arena!'
+    if (reason === 'stalemate') return 'Empate por afogamento de tropas.'
+    if (reason === 'surrender') return 'Rendição aceita pelos idealizadores dos jogos.'
+    return 'Fim do combate.'
+  }
+
+  const getQuote = () => {
+    if (isWinner && !isDraw) return '"O fogo está pegando. E se nós queimarmos, vocês queimarão conosco!"'
+    if (!isWinner && !isDraw) return '"O canhão disparou. A arena não perdoa hesitações."'
+    return '"Que a sorte esteja sempre a seu favor."'
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-fade-in">
-      <div className="bg-gradient-to-b from-slate-900 to-slate-950 border border-amber-500/60 rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl shadow-amber-950/40">
-        <div className="flex justify-center mb-4">
-          <div className="w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/40 flex items-center justify-center text-amber-400">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4 animate-fade-in">
+      <div className="bg-gradient-to-b from-[#141724] via-[#0c0e17] to-[#06070a] border-2 border-amber-500/70 rounded-3xl p-6 sm:p-7 max-w-sm w-full text-center shadow-2xl shadow-amber-950/70 ring-1 ring-amber-400/30">
+        <div className="flex justify-center mb-3">
+          <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-amber-600/20 via-orange-500/30 to-amber-400/20 border-2 border-amber-500/60 flex items-center justify-center shadow-inner">
             {isDraw ? (
-              <span className="text-2xl font-black">½</span>
+              <span className="text-2xl font-black font-cinzel text-amber-300">½</span>
             ) : isTimeout && !isWinner ? (
-              <Timer className="w-8 h-8 text-amber-500" />
+              <Timer className="w-8 h-8 text-orange-400" />
             ) : isWinner ? (
               <Trophy className="w-8 h-8 text-amber-400 animate-bounce" />
             ) : (
@@ -70,24 +76,31 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
           </div>
         </div>
 
-        <h2 className="text-2xl font-extrabold font-cinzel text-amber-400 mb-1">{getTitle()}</h2>
-        <p className="text-xs text-slate-400 mb-6">{getSubtitle()}</p>
+        <h2 className="text-2xl font-extrabold font-cinzel text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-orange-400 mb-1">
+          {getTitle()}
+        </h2>
+        <p className="text-xs text-slate-300 mb-2">{getSubtitle()}</p>
 
-        <div className="flex flex-col gap-3">
+        {/* Thematic Quote */}
+        <div className="my-4 py-2 px-3 bg-[#07080d] rounded-xl border border-amber-900/40 text-[11px] italic text-amber-200/80 font-cinzel">
+          {getQuote()}
+        </div>
+
+        <div className="flex flex-col gap-2.5">
           <button
             onClick={onRestart}
-            className="w-full py-3.5 px-4 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 active:scale-98 rounded-xl font-bold text-white shadow-lg shadow-amber-900/40 flex items-center justify-center gap-2 transition"
+            className="w-full py-3.5 px-4 bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 hover:from-amber-500 active:scale-98 rounded-xl font-bold text-white shadow-lg shadow-orange-950/60 flex items-center justify-center gap-2 transition font-cinzel text-xs tracking-wider border border-amber-400/40"
           >
             <RotateCcw className="w-4 h-4" />
-            Jogar Novamente
+            Nova Batalha na Arena
           </button>
 
           <button
             onClick={onExit}
-            className="w-full py-3 px-4 bg-slate-800 hover:bg-slate-700/80 active:scale-98 rounded-xl text-xs font-semibold text-slate-300 border border-slate-700 flex items-center justify-center gap-2 transition"
+            className="w-full py-2.5 px-4 bg-[#0e1017] hover:bg-[#151926] active:scale-98 rounded-xl text-xs font-semibold text-slate-300 border border-slate-800 flex items-center justify-center gap-2 transition font-cinzel"
           >
-            <Home className="w-4 h-4" />
-            Voltar ao Menu Principal
+            <Home className="w-4 h-4 text-slate-400" />
+            Retornar ao Menu
           </button>
         </div>
       </div>

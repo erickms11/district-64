@@ -32,7 +32,7 @@ export const GameFooter: React.FC<GameFooterProps> = ({
 
   const getMyTitle = () => {
     if (mode === 'local') {
-      return playerColor === 'w' ? 'Tributo das Brancas' : 'Tributo das Pretas'
+      return playerColor === 'w' ? 'Tributo dos Distritos' : 'Tributo da Capital'
     }
     return playerColor === 'w' ? 'Distrito 12 (Você)' : 'A Capital (Você)'
   }
@@ -43,24 +43,24 @@ export const GameFooter: React.FC<GameFooterProps> = ({
     <div className="w-full max-w-[420px] flex flex-col gap-2 mt-1 select-none">
       {/* Player Card (Bottom) */}
       <div
-        className={`flex items-center justify-between p-2.5 rounded-xl border transition-all ${
+        className={`flex items-center justify-between p-2 rounded-xl border transition-all ${
           isMyTurn
-            ? 'bg-amber-950/40 border-amber-500 shadow-lg shadow-amber-950/30'
-            : 'bg-slate-900/60 border-slate-800/80'
+            ? 'bg-gradient-to-r from-amber-950/60 to-orange-950/50 border-amber-500 shadow-lg shadow-amber-950/40'
+            : 'bg-[#0e1017]/85 border-amber-950/40'
         }`}
       >
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-slate-800 flex items-center justify-center border border-slate-700">
-            <div className="w-5 h-5">
+          <div className="w-8 h-8 rounded-lg bg-[#08090e] flex items-center justify-center border border-amber-900/50 shadow-inner">
+            <div className="w-6 h-6">
               <ChessPiece type="k" color={playerColor} />
             </div>
           </div>
           <div>
-            <div className="text-xs font-bold text-slate-200">{getMyTitle()}</div>
+            <div className="text-xs font-bold text-slate-200 font-cinzel">{getMyTitle()}</div>
             <div className="text-[10px]">
               {isMyTurn ? (
-                <span className="text-amber-400 font-bold tracking-wide animate-pulse">
-                  ⚔️ SEU LANCE
+                <span className="text-amber-300 font-bold tracking-wide animate-pulse flex items-center gap-1 font-cinzel">
+                  🏹 SEU LANCE
                 </span>
               ) : (
                 <span className="text-slate-500">Aguardando oponente...</span>
@@ -82,10 +82,10 @@ export const GameFooter: React.FC<GameFooterProps> = ({
           {formattedTime && (
             <div className={`px-2 py-1 rounded-lg font-mono text-xs font-bold flex items-center gap-1 border ${
               (timeRemaining ?? 0) <= 30
-                ? 'bg-red-950/80 border-red-500/80 text-red-300 animate-pulse'
-                : 'bg-slate-950 border-slate-800 text-slate-200'
+                ? 'bg-red-950/90 border-red-500 text-red-300 animate-pulse shadow-md shadow-red-950/50'
+                : 'bg-[#08090e] border-amber-900/50 text-amber-200'
             }`}>
-              <Clock className="w-3 h-3 text-slate-400" />
+              <Clock className="w-3 h-3 text-amber-400" />
               {formattedTime}
             </div>
           )}
@@ -94,8 +94,8 @@ export const GameFooter: React.FC<GameFooterProps> = ({
 
       {/* Check Alert Bar */}
       {inCheck && (
-        <div className="w-full py-1.5 px-3 bg-red-950/80 border border-red-600/70 rounded-xl text-center text-xs font-bold text-red-200 animate-pulse tracking-wide shadow-md">
-          ⚠️ O REI ESTÁ EM XEQUE!
+        <div className="w-full py-1.5 px-3 bg-gradient-to-r from-red-950/90 via-red-900/80 to-red-950/90 border border-red-500/80 rounded-xl text-center text-xs font-bold text-red-200 animate-pulse tracking-wider shadow-lg shadow-red-950/50 font-cinzel">
+          ⚠️ O REI ESTÁ EM XEQUE NA ARENA!
         </div>
       )}
     </div>

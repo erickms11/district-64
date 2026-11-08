@@ -31,9 +31,15 @@ export const Board: React.FC<BoardProps> = ({
   validMoves.forEach((m) => validDestinations.set(m.to as Square, m))
 
   return (
-    <div className="relative w-full max-w-[420px] aspect-square rounded-2xl p-2 sm:p-2.5 bg-gradient-to-b from-amber-700 via-amber-900 to-amber-950 border-2 border-amber-500/60 shadow-2xl shadow-black/80">
+    <div className="relative w-full max-w-[420px] aspect-square rounded-2xl p-2.5 sm:p-3 bg-gradient-to-b from-[#331c0e] via-[#1f1007] to-[#0d0704] border-2 border-amber-600/50 shadow-2xl shadow-black ring-1 ring-amber-500/20">
+      {/* Decorative Arena Cornucopia Rivets */}
+      <div className="absolute top-1 left-1.5 w-1.5 h-1.5 rounded-full bg-amber-500/60 shadow" />
+      <div className="absolute top-1 right-1.5 w-1.5 h-1.5 rounded-full bg-amber-500/60 shadow" />
+      <div className="absolute bottom-1 left-1.5 w-1.5 h-1.5 rounded-full bg-amber-500/60 shadow" />
+      <div className="absolute bottom-1 right-1.5 w-1.5 h-1.5 rounded-full bg-amber-500/60 shadow" />
+
       {/* Board Inner Grid */}
-      <div className="w-full h-full grid grid-cols-8 grid-rows-8 rounded-xl overflow-hidden border border-amber-950/70 shadow-inner select-none touch-manipulation">
+      <div className="w-full h-full grid grid-cols-8 grid-rows-8 rounded-xl overflow-hidden border-2 border-[#422411] shadow-inner select-none touch-manipulation">
         {squares.map((sq) => {
           const file = sq[0]
           const rank = sq[1]
@@ -49,11 +55,11 @@ export const Board: React.FC<BoardProps> = ({
           const isLastMoveTo = lastMove?.to === sq
           const isKingInCheck = inCheck && piece?.type === 'k' && piece?.color === turn
 
-          // High-contrast Arena theme:
-          // Light: Marfim/Areia dourada quente (#f3ebd7)
-          // Dark: Madeira/Bronze nobre da Arena (#a67344)
-          const bgSquare = isDark ? 'bg-[#a67344]' : 'bg-[#f4ecdc]'
-          const coordColor = isDark ? 'text-[#f4ecdc]/70' : 'text-[#85572b]'
+          // Hunger Games Arena Square Palette:
+          // Light: Areia Dourada da Arena (#ecdcb9)
+          // Dark: Madeira Queimada / Terra Calcinada (#734b26)
+          const bgSquare = isDark ? 'bg-[#734b26]' : 'bg-[#ecdcb9]'
+          const coordColor = isDark ? 'text-[#ecdcb9]/60' : 'text-[#543519]'
 
           return (
             <div
@@ -62,9 +68,9 @@ export const Board: React.FC<BoardProps> = ({
               className={`
                 relative flex items-center justify-center cursor-pointer transition-colors duration-150
                 ${bgSquare}
-                ${isSelected ? '!bg-amber-400/70 ring-2 ring-amber-500 inset-0 z-10' : ''}
-                ${isLastMoveFrom || isLastMoveTo ? '!bg-amber-300/50' : ''}
-                ${isKingInCheck ? '!bg-red-500/80 animate-pulse' : ''}
+                ${isSelected ? '!bg-amber-400/80 ring-2 ring-amber-500 inset-0 z-10 shadow-lg shadow-amber-500/30' : ''}
+                ${isLastMoveFrom || isLastMoveTo ? '!bg-amber-500/35' : ''}
+                ${isKingInCheck ? '!bg-red-600/80 animate-pulse' : ''}
               `}
               style={{
                 WebkitTapHighlightColor: 'transparent',
@@ -72,12 +78,12 @@ export const Board: React.FC<BoardProps> = ({
             >
               {/* Coordinate label for rank (left edge) and file (bottom edge) */}
               {((isFlipped ? file === 'h' : file === 'a')) && (
-                <span className={`absolute top-0.5 left-1 text-[10px] font-bold pointer-events-none select-none ${coordColor}`}>
+                <span className={`absolute top-0.5 left-1 text-[9px] font-bold pointer-events-none select-none ${coordColor}`}>
                   {rank}
                 </span>
               )}
               {((isFlipped ? rank === '8' : rank === '1')) && (
-                <span className={`absolute bottom-0.5 right-1 text-[10px] font-bold pointer-events-none select-none ${coordColor}`}>
+                <span className={`absolute bottom-0.5 right-1 text-[9px] font-bold pointer-events-none select-none ${coordColor}`}>
                   {file}
                 </span>
               )}
@@ -93,15 +99,15 @@ export const Board: React.FC<BoardProps> = ({
                 </div>
               )}
 
-              {/* Move Indicator Dots / Ring */}
+              {/* Fire Ember Move Indicators */}
               {isTargetMove && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
                   {piece || targetMove?.flags.includes('e') ? (
-                    // Capture target: strong ring
-                    <div className="w-full h-full border-4 border-amber-600/90 rounded-full animate-ping opacity-40" />
+                    // Capture target: flame ring
+                    <div className="w-full h-full border-4 border-orange-500 rounded-full animate-ping opacity-50" />
                   ) : (
-                    // Simple empty move: center dot with good contrast
-                    <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-amber-900/60 shadow-md ring-2 ring-amber-400" />
+                    // Empty target: burning ember core
+                    <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-gradient-to-tr from-amber-500 to-orange-500 shadow-md ring-2 ring-amber-300 shadow-orange-500/50" />
                   )}
                 </div>
               )}
