@@ -77,14 +77,17 @@ export const Board: React.FC<BoardProps> = ({
                 WebkitTapHighlightColor: 'transparent',
               }}
             >
-              {/* Last Move Origin: subtle dashed boundary without altering the square texture */}
+              {/* Last Move Origin: dashed fiery border showing where the piece came from */}
               {isLastMoveFrom && !isSelected && (
-                <div className="absolute inset-1 border border-dashed border-amber-500/50 rounded pointer-events-none z-10 opacity-70" />
+                <div className="absolute inset-0.5 border-2 border-dashed border-orange-500/70 rounded pointer-events-none z-20" />
               )}
 
-              {/* Last Move Destination: golden ring with soft warm luminous glow */}
+              {/* Last Move Destination: prominent high-contrast fiery flame border */}
               {isLastMoveTo && !isSelected && (
-                <div className="absolute inset-0 bg-amber-400/20 ring-2 ring-inset ring-amber-400/80 pointer-events-none z-10 shadow-[inset_0_0_12px_rgba(251,191,36,0.3)] animate-fade-in" />
+                <div className="absolute inset-0 border-[3px] border-orange-500 rounded-sm pointer-events-none z-20 shadow-[0_0_10px_rgba(249,115,22,0.85),inset_0_0_8px_rgba(249,115,22,0.45)]">
+                  {/* Glowing fiery ember beacon in the top-right corner */}
+                  <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-orange-400 ring-1 ring-amber-100 shadow-md shadow-orange-500 animate-pulse" />
+                </div>
               )}
 
               {/* Coordinate label for rank (left edge) and file (bottom edge) */}
