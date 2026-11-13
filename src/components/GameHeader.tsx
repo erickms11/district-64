@@ -12,6 +12,7 @@ interface GameHeaderProps {
   roomCode?: string
   difficulty?: CpuDifficulty
   timeRemaining?: number
+  isCpuPlaying?: boolean
   activeOpponentEmote?: PeerEmote | null
   capturedByOpponent: PieceSymbol[]
   capturedByMe: PieceSymbol[]
@@ -35,6 +36,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
   roomCode,
   difficulty,
   timeRemaining,
+  isCpuPlaying,
   activeOpponentEmote,
   capturedByOpponent,
   onSendEmote,
@@ -118,7 +120,12 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
           <div>
             <div className="text-xs font-bold text-slate-200 font-cinzel">{getOpponentTitle()}</div>
             <div className="text-[10px] text-slate-400">
-              {currentTurn === opponentColor ? (
+              {mode === 'cpu' && isCpuPlaying ? (
+                <span className="text-amber-400 font-semibold flex items-center gap-1.5 animate-pulse">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping inline-block" />
+                  Calculando lance...
+                </span>
+              ) : currentTurn === opponentColor ? (
                 <span className="text-amber-400 font-semibold animate-pulse">Planejando ataque...</span>
               ) : (
                 'Aguardando seu lance'

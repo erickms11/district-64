@@ -21,6 +21,7 @@ export const Board: React.FC<BoardProps> = ({
   pieceTheme = 'staunton',
   selectedSquare,
   validMoves,
+  lastMove,
   onSquareClick
 }) => {
   const squares = getBoardSquares(isFlipped)
@@ -53,6 +54,8 @@ export const Board: React.FC<BoardProps> = ({
           const isTargetMove = validDestinations.has(sq)
           const targetMove = validDestinations.get(sq)
           const isKingInCheck = inCheck && piece?.type === 'k' && piece?.color === turn
+          const isLastMoveFrom = lastMove?.from === sq
+          const isLastMoveTo = lastMove?.to === sq
 
           // Hunger Games Arena Square Palette:
           // Light: Areia Dourada da Arena (#ecdcb9)
@@ -74,6 +77,16 @@ export const Board: React.FC<BoardProps> = ({
                 WebkitTapHighlightColor: 'transparent',
               }}
             >
+              {/* Last Move Origin: subtle dashed boundary without altering the square texture */}
+              {isLastMoveFrom && !isSelected && (
+                <div className="absolute inset-1 border border-dashed border-amber-500/50 rounded pointer-events-none z-10 opacity-70" />
+              )}
+
+              {/* Last Move Destination: golden ring with soft warm luminous glow */}
+              {isLastMoveTo && !isSelected && (
+                <div className="absolute inset-0 bg-amber-400/20 ring-2 ring-inset ring-amber-400/80 pointer-events-none z-10 shadow-[inset_0_0_12px_rgba(251,191,36,0.3)] animate-fade-in" />
+              )}
+
               {/* Coordinate label for rank (left edge) and file (bottom edge) */}
               {((isFlipped ? file === 'h' : file === 'a')) && (
                 <span className={`absolute top-0.5 left-1 text-[9px] font-bold pointer-events-none select-none ${coordColor}`}>
@@ -90,7 +103,7 @@ export const Board: React.FC<BoardProps> = ({
               {piece && (
                 <div
                   className={`w-full h-full p-1 sm:p-1.5 flex items-center justify-center z-10 transition-transform ${
-                    isSelected ? 'scale-110' : ''
+                    isSelected ? 'scale-110' : isLastMoveTo ? 'scale-105 transition-transform duration-300' : ''
                   }`}
                 >
                   <ChessPiece type={piece.type} color={piece.color} theme={pieceTheme} />

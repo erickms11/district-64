@@ -49,10 +49,12 @@ export const App: React.FC = () => {
   const [isFlipped, setIsFlipped] = useState(false)
   const [selectedSquare, setSelectedSquare] = useState<Square | null>(null)
   const [validMoves, setValidMoves] = useState<Move[]>([])
+  const [lastMove, setLastMove] = useState<{ from: Square; to: Square } | null>(null)
   const [pendingPromotion, setPendingPromotion] = useState<{ from: Square; to: Square } | null>(null)
   const [gameStatus, setGameStatus] = useState<GameStatus>(() => evaluateGameStatus(chess))
 
   const isCpuThinking = useRef(false)
+  const [isCpuPlaying, setIsCpuPlaying] = useState(false)
   const hasRecordedStats = useRef(false)
 
   // Save settings when changed
@@ -93,6 +95,7 @@ export const App: React.FC = () => {
         })
 
         if (moveResult) {
+          setLastMove({ from, to })
           setSelectedSquare(null)
           setValidMoves([])
 
@@ -184,6 +187,10 @@ export const App: React.FC = () => {
     const currentTurn = chess.turn()
     if (currentTurn !== playerColor) {
       isCpuThinking.current = true
+      setIsCpuPlaying(true)
+
+      // Pacing: Gives user natural time to register their move and see the CPU calculating
+      const delay = cpuDifficulty === 'hard' ? 1200 : cpuDifficulty === 'medium' ? 950 : 750
 
       const timer = setTimeout(() => {
         try {
@@ -195,12 +202,14 @@ export const App: React.FC = () => {
           console.error('Erro ao calcular lance da CPU:', e)
         } finally {
           isCpuThinking.current = false
+          setIsCpuPlaying(false)
         }
-      }, 450)
+      }, delay)
 
       return () => {
         clearTimeout(timer)
         isCpuThinking.current = false
+        setIsCpuPlaying(false)
       }
     }
   }, [view, gameMode, gameStatus.isOver, playerColor, fen, chess, cpuDifficulty, applyMove])
@@ -215,6 +224,7 @@ export const App: React.FC = () => {
         if (status === 'connected') {
           hasRecordedStats.current = false
           chess.reset()
+          setLastMove(null)
           setSelectedSquare(null)
           setValidMoves([])
           updateGameStateRef.current()
@@ -275,6 +285,7 @@ export const App: React.FC = () => {
         } else if (msg.type === 'RESTART') {
           hasRecordedStats.current = false
           chess.reset()
+          setLastMove(null)
           setSelectedSquare(null)
           setValidMoves([])
           setClocks({ w: timeControlRef.current, b: timeControlRef.current })
@@ -338,11 +349,13 @@ export const App: React.FC = () => {
   const handleStartCpu = () => {
     hasRecordedStats.current = false
     isCpuThinking.current = false
+    setIsCpuPlaying(false)
     setGameMode('cpu')
     setPlayerColor(cpuPlayerColor)
     setIsFlipped(cpuPlayerColor === 'b')
     setClocks({ w: timeControl, b: timeControl })
     chess.reset()
+    setLastMove(null)
     setSelectedSquare(null)
     setValidMoves([])
     updateGameState()
@@ -352,11 +365,14 @@ export const App: React.FC = () => {
   // Local Pass & Play
   const handleStartLocal = () => {
     hasRecordedStats.current = false
+    isCpuThinking.current = false
+    setIsCpuPlaying(false)
     setGameMode('local')
     setPlayerColor('w')
     setIsFlipped(false)
     setClocks({ w: timeControl, b: timeControl })
     chess.reset()
+    setLastMove(null)
     setSelectedSquare(null)
     setValidMoves([])
     updateGameState()
@@ -367,7 +383,9 @@ export const App: React.FC = () => {
   const handleRestart = () => {
     hasRecordedStats.current = false
     isCpuThinking.current = false
+    setIsCpuPlaying(false)
     chess.reset()
+    setLastMove(null)
     setSelectedSquare(null)
     setValidMoves([])
     setClocks({ w: timeControl, b: timeControl })
@@ -382,10 +400,12 @@ export const App: React.FC = () => {
   const handleExit = () => {
     hasRecordedStats.current = false
     isCpuThinking.current = false
+    setIsCpuPlaying(false)
     peerService.cleanup()
     setRoomCode(null)
     setConnectionState('idle')
     chess.reset()
+    setLastMove(null)
     setSelectedSquare(null)
     setValidMoves([])
     setView('lobby')
@@ -519,6 +539,7 @@ export const App: React.FC = () => {
             roomCode={roomCode || undefined}
             difficulty={cpuDifficulty}
             timeRemaining={timeControl > 0 ? clocks[opponentColor] : undefined}
+            isCpuPlaying={isCpuPlaying}
             activeOpponentEmote={activeOpponentEmote}
             onSendEmote={gameMode === 'online' ? handleSendEmote : undefined}
             capturedByOpponent={playerColor === 'w' ? captured.w : captured.b}
@@ -535,6 +556,7 @@ export const App: React.FC = () => {
             isFlipped={isFlipped}
             selectedSquare={selectedSquare}
             validMoves={validMoves}
+            lastMove={lastMove}
             onSquareClick={handleSquareClick}
           />
 

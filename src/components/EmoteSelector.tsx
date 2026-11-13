@@ -68,3 +68,4 @@ export const EmoteSelector: React.FC<EmoteSelectorProps> = ({ onSendEmote }) => 
     </div>
   )
 }
+

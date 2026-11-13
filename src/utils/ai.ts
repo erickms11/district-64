@@ -11,13 +11,13 @@ const PIECE_VALUES: Record<PieceSymbol, number> = {
   k: 20000
 }
 
-// Positional bonuses (Piece-Square Tables)
+// Positional bonuses (Piece-Square Tables) - Oriented from White's perspective (0 = a8, 63 = h1)
 const PAWN_PST = [
-  0,  0,  0,  0,  0,  0,  0,  0,
+   0,  0,  0,  0,  0,  0,  0,  0,
   50, 50, 50, 50, 50, 50, 50, 50,
   10, 10, 20, 30, 30, 20, 10, 10,
-   5,  5, 10, 25, 25, 10,  5,  5,
-   0,  0,  0, 20, 20,  0,  0,  0,
+   5,  5, 10, 27, 27, 10,  5,  5,
+   0,  0,  0, 25, 25,  0,  0,  0,
    5, -5,-10,  0,  0,-10, -5,  5,
    5, 10, 10,-20,-20, 10, 10,  5,
    0,  0,  0,  0,  0,  0,  0,  0
@@ -45,27 +45,84 @@ const BISHOP_PST = [
   -20,-10,-10,-10,-10,-10,-10,-20
 ]
 
+// Rook table: rewards 7th rank (+35) and active central/open files, disincentivizes passive corner shuffling
+const ROOK_PST = [
+   0,   0,   0,   5,   5,   0,   0,   0,
+  25,  30,  30,  35,  35,  30,  30,  25,
+  -5,   5,  10,  15,  15,  10,   5,  -5,
+  -5,   5,  10,  15,  15,  10,   5,  -5,
+  -5,   5,  10,  15,  15,  10,   5,  -5,
+  -5,   5,  10,  15,  15,  10,   5,  -5,
+  -5,   5,  10,  15,  15,  10,   5,  -5,
+   0,   5,  10,  15,  15,  10,   5,   0
+]
+
+const QUEEN_PST = [
+  -20,-10,-10, -5, -5,-10,-10,-20,
+  -10,  0,  0,  0,  0,  0,  0,-10,
+  -10,  0,  5,  5,  5,  5,  0,-10,
+   -5,  0,  5, 10, 10,  5,  0, -5,
+    0,  0,  5, 10, 10,  5,  0, -5,
+  -10,  5,  5,  5,  5,  5,  0,-10,
+  -10,  0,  5,  0,  0,  0,  0,-10,
+  -20,-10,-10, -5, -5,-10,-10,-20
+]
+
+const KING_MIDGAME_PST = [
+  -30,-40,-40,-50,-50,-40,-40,-30,
+  -30,-40,-40,-50,-50,-40,-40,-30,
+  -30,-40,-40,-50,-50,-40,-40,-30,
+  -30,-40,-40,-50,-50,-40,-40,-30,
+  -20,-30,-30,-40,-40,-30,-30,-20,
+  -10,-20,-20,-20,-20,-20,-20,-10,
+   20, 20,  0,  0,  0,  0, 20, 20,
+   20, 30, 10,  0,  0, 10, 30, 20
+]
+
+const KING_ENDGAME_PST = [
+  -20,-10,-10,-10,-10,-10,-10,-20,
+  -10,  0, 10, 10, 10, 10,  0,-10,
+  -10, 10, 20, 25, 25, 20, 10,-10,
+  -10, 10, 25, 30, 30, 25, 10,-10,
+  -10, 10, 25, 30, 30, 25, 10,-10,
+  -10, 10, 20, 25, 25, 20, 10,-10,
+  -10,  0, 10, 10, 10, 10,  0,-10,
+  -20,-10,-10,-10,-10,-10,-10,-20
+]
+
 function evaluateBoard(chess: Chess): number {
   let score = 0
   const board = chess.board()
+
+  // Detect endgame condition (no queens or reduced major/minor pieces)
+  let queensCount = 0
+  let majorMinorPiecesCount = 0
 
   for (let r = 0; r < 8; r++) {
     for (let c = 0; c < 8; c++) {
       const piece = board[r][c]
       if (!piece) continue
 
+      if (piece.type === 'q') queensCount++
+      else if (piece.type !== 'p' && piece.type !== 'k') majorMinorPiecesCount++
+
       let val = PIECE_VALUES[piece.type]
       const squareIdx = r * 8 + c
+      const pstIdx = piece.color === 'w' ? squareIdx : 63 - squareIdx
 
       if (piece.type === 'p') {
-        const pstVal = piece.color === 'w' ? PAWN_PST[squareIdx] : PAWN_PST[63 - squareIdx]
-        val += pstVal
+        val += PAWN_PST[pstIdx]
       } else if (piece.type === 'n') {
-        const pstVal = piece.color === 'w' ? KNIGHT_PST[squareIdx] : KNIGHT_PST[63 - squareIdx]
-        val += pstVal
+        val += KNIGHT_PST[pstIdx]
       } else if (piece.type === 'b') {
-        const pstVal = piece.color === 'w' ? BISHOP_PST[squareIdx] : BISHOP_PST[63 - squareIdx]
-        val += pstVal
+        val += BISHOP_PST[pstIdx]
+      } else if (piece.type === 'r') {
+        val += ROOK_PST[pstIdx]
+      } else if (piece.type === 'q') {
+        val += QUEEN_PST[pstIdx]
+      } else if (piece.type === 'k') {
+        const isEndgame = queensCount === 0 || (queensCount <= 2 && majorMinorPiecesCount <= 2)
+        val += isEndgame ? KING_ENDGAME_PST[pstIdx] : KING_MIDGAME_PST[pstIdx]
       }
 
       score += piece.color === 'w' ? val : -val
@@ -82,12 +139,29 @@ function minimax(
   beta: number,
   isMaximizing: boolean
 ): number {
-  if (depth === 0 || chess.isGameOver()) {
+  // Evaluation of terminal game states
+  if (chess.isGameOver()) {
+    if (chess.isCheckmate()) {
+      // The side to move is in checkmate
+      return chess.turn() === 'w' ? -100000 - depth * 100 : 100000 + depth * 100
+    }
+    // Draw by stalemate, repetition, or 50 moves
+    return 0
+  }
+
+  if (depth === 0) {
     return evaluateBoard(chess)
   }
 
   const moves = chess.moves({ verbose: true })
-  moves.sort((a, b) => (b.captured ? 1 : 0) - (a.captured ? 1 : 0))
+  // Move ordering: sort captures and promotions first for faster alpha-beta cutoffs
+  moves.sort((a, b) => {
+    let scoreA = a.captured ? PIECE_VALUES[a.captured] : 0
+    let scoreB = b.captured ? PIECE_VALUES[b.captured] : 0
+    if (a.promotion) scoreA += 800
+    if (b.promotion) scoreB += 800
+    return scoreB - scoreA
+  })
 
   if (isMaximizing) {
     let maxEval = -Infinity
@@ -115,43 +189,85 @@ function minimax(
 }
 
 export function getBestCpuMove(chess: Chess, difficulty: CpuDifficulty): Move | null {
-  // Always use a detached clone so we never mutate or conflict with the active game state
-  const game = new Chess(chess.fen())
+  // Clone the game with full PGN history so repetition detection works accurately
+  const game = new Chess()
+  try {
+    game.loadPgn(chess.pgn())
+  } catch {
+    game.load(chess.fen())
+  }
+
   const moves = game.moves({ verbose: true })
   if (moves.length === 0) return null
 
-  // Easy: occasionally make a random move
-  if (difficulty === 'easy') {
-    if (Math.random() < 0.4) {
-      return moves[Math.floor(Math.random() * moves.length)]
-    }
+  // Easy: small chance of making an unpredictable random legal move
+  if (difficulty === 'easy' && Math.random() < 0.25) {
+    return moves[Math.floor(Math.random() * moves.length)]
   }
 
   const isMaximizing = game.turn() === 'w'
   const depth = difficulty === 'hard' ? 3 : difficulty === 'medium' ? 2 : 1
 
-  let bestMove: Move = moves[0]
-  let bestScore = isMaximizing ? -Infinity : Infinity
+  // Extract CPU's own last move (2 half-moves ago in history) to detect and penalize immediate shuffling
+  const history = game.history({ verbose: true })
+  const lastCpuMove = history.length >= 2 ? history[history.length - 2] : null
 
-  moves.sort((a, b) => (b.captured ? 1 : 0) - (a.captured ? 1 : 0))
+  // Sort candidate moves
+  moves.sort((a, b) => {
+    let scoreA = a.captured ? PIECE_VALUES[a.captured] : 0
+    let scoreB = b.captured ? PIECE_VALUES[b.captured] : 0
+    if (a.promotion) scoreA += 800
+    if (b.promotion) scoreB += 800
+    return scoreB - scoreA
+  })
+
+  const scoredMoves: { move: Move; score: number }[] = []
 
   for (const move of moves) {
     game.move(move)
-    const score = minimax(game, depth - 1, -Infinity, Infinity, !isMaximizing)
-    game.undo()
+    let score = minimax(game, depth - 1, -Infinity, Infinity, !isMaximizing)
 
-    if (isMaximizing) {
-      if (score > bestScore) {
-        bestScore = score
-        bestMove = move
-      }
-    } else {
-      if (score < bestScore) {
-        bestScore = score
-        bestMove = move
+    // Threefold repetition guard: heavily penalize triggering a repetition draw if not in a losing state
+    if (game.isThreefoldRepetition() || game.isDraw()) {
+      if (isMaximizing) {
+        score -= 900
+      } else {
+        score += 900
       }
     }
+
+    // Anti-shuffle penalty: penalize immediately undoing the previous move without capturing or checking
+    if (lastCpuMove && move.from === lastCpuMove.to && move.to === lastCpuMove.from) {
+      if (!move.captured && !game.inCheck()) {
+        if (isMaximizing) {
+          score -= 300
+        } else {
+          score += 300
+        }
+      }
+    }
+
+    game.undo()
+    scoredMoves.push({ move, score })
   }
 
-  return bestMove
+  if (scoredMoves.length === 0) return moves[0]
+
+  // Sort by score according to turn
+  scoredMoves.sort((a, b) => (isMaximizing ? b.score - a.score : a.score - b.score))
+
+  const bestScore = scoredMoves[0].score
+
+  // Filter top tier candidates within narrow margin to avoid mechanical robotic loops
+  const margin = difficulty === 'hard' ? 8 : 20
+  const topCandidates = scoredMoves.filter((sm) => Math.abs(sm.score - bestScore) <= margin)
+
+  // On hard, always take the best evaluation
+  if (difficulty === 'hard' || topCandidates.length === 1) {
+    return topCandidates[0].move
+  }
+
+  // On medium/easy, pick randomly among top candidate moves to keep play dynamic and varied
+  const chosen = topCandidates[Math.floor(Math.random() * topCandidates.length)]
+  return chosen.move
 }
