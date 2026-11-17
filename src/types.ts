@@ -4,7 +4,7 @@ export type { Square, PieceSymbol, Color }
 
 export type GameMode = 'online' | 'local' | 'cpu'
 
-export type CpuDifficulty = 'easy' | 'medium' | 'hard'
+export type CpuDifficulty = 'easy' | 'medium' | 'hard' | 'expert'
 
 export type TimeControl = 0 | 180 | 300 | 600 // 0 = sem tempo, 3m, 5m, 10m
 

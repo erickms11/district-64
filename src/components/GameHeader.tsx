@@ -52,7 +52,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
 
   const getOpponentTitle = () => {
     if (mode === 'cpu') {
-      const diffLabel = difficulty === 'hard' ? 'Elite da Capital' : difficulty === 'medium' ? 'Pacificador' : 'Recruta'
+      const diffLabel = difficulty === 'expert' ? 'Expert Snow' : difficulty === 'hard' ? 'Elite da Capital' : difficulty === 'medium' ? 'Pacificador' : 'Recruta'
       return opponentColor === 'w' ? `Distrito 12 (${diffLabel})` : `Pacificador (${diffLabel})`
     }
     if (mode === 'local') {
@@ -99,7 +99,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
         {mode === 'cpu' && (
           <div className="px-3 py-1 bg-[#0e1017] border border-amber-900/50 rounded-full text-[10px] font-bold text-amber-400 flex items-center gap-1.5 font-cinzel">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            PACIFICADOR CPU
+            {difficulty === 'expert' ? 'EXPERT SNOW' : difficulty === 'hard' ? 'ELITE CAPITAL' : difficulty === 'medium' ? 'PACIFICADOR CPU' : 'RECRUTA CPU'}
           </div>
         )}
 

@@ -87,18 +87,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <Bot className="w-3.5 h-3.5 text-amber-400" />
             Nível da CPU (A Capital)
           </label>
-          <div className="grid grid-cols-3 gap-1.5">
-            {(['easy', 'medium', 'hard'] as CpuDifficulty[]).map((diff) => (
+          <div className="grid grid-cols-4 gap-1.5">
+            {(['easy', 'medium', 'hard', 'expert'] as CpuDifficulty[]).map((diff) => (
               <button
                 key={diff}
                 onClick={() => onSelectCpuDifficulty(diff)}
-                className={`py-2 text-[11px] font-bold rounded-xl border transition ${
+                className={`py-2 text-[10px] sm:text-[11px] font-bold rounded-xl border transition ${
                   cpuDifficulty === diff
-                    ? 'bg-gradient-to-r from-amber-600/40 to-orange-600/40 border-amber-400 text-amber-200 shadow-sm'
+                    ? 'bg-gradient-to-r from-amber-600/40 to-orange-600/40 border-amber-400 text-amber-200 shadow-sm ring-1 ring-amber-400/50'
                     : 'bg-[#08090e] border-slate-800 text-slate-400 hover:text-slate-200'
                 }`}
               >
-                {diff === 'easy' ? 'Recruta' : diff === 'medium' ? 'Pacificador' : 'Elite'}
+                {diff === 'easy' ? 'Recruta' : diff === 'medium' ? 'Pacificador' : diff === 'hard' ? 'Elite' : 'Expert'}
               </button>
             ))}
           </div>

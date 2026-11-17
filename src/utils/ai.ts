@@ -200,13 +200,33 @@ export function getBestCpuMove(chess: Chess, difficulty: CpuDifficulty): Move | 
   const moves = game.moves({ verbose: true })
   if (moves.length === 0) return null
 
-  // Easy: small chance of making an unpredictable random legal move
-  if (difficulty === 'easy' && Math.random() < 0.25) {
+  // Easy (Recruta): chance frequente de lance imprevisível e lúdico
+  if (difficulty === 'easy' && Math.random() < 0.35) {
     return moves[Math.floor(Math.random() * moves.length)]
   }
 
+  // Medium (Pacificador) - Ajustado para ser mais acessível e divertido!
+  // ~22% das vezes faz um lance humano casual de desenvolvimento em vez de combos implacáveis
+  if (difficulty === 'medium' && Math.random() < 0.22) {
+    const safeMoves = moves.filter((m) => m.piece !== 'q' || !m.to.match(/[d-e][4-5]/))
+    const pool = safeMoves.length > 0 ? safeMoves : moves
+    return pool[Math.floor(Math.random() * pool.length)]
+  }
+
   const isMaximizing = game.turn() === 'w'
-  const depth = difficulty === 'hard' ? 3 : difficulty === 'medium' ? 2 : 1
+
+  // Profundidade minimax baseada na dificuldade
+  let depth = 1
+  if (difficulty === 'expert') {
+    // Expert (Snow): depth 4 no meio/final, depth 3 com muitas peças para resposta fluida
+    depth = moves.length > 30 ? 3 : 4
+  } else if (difficulty === 'hard') {
+    depth = 3
+  } else if (difficulty === 'medium') {
+    depth = 2
+  } else {
+    depth = 1
+  }
 
   // Extract CPU's own last move (2 half-moves ago in history) to detect and penalize immediate shuffling
   const history = game.history({ verbose: true })
@@ -258,16 +278,25 @@ export function getBestCpuMove(chess: Chess, difficulty: CpuDifficulty): Move | 
 
   const bestScore = scoredMoves[0].score
 
-  // Filter top tier candidates within narrow margin to avoid mechanical robotic loops
-  const margin = difficulty === 'hard' ? 8 : 20
+  // Margem de seleção de candidatos:
+  // - Expert: 0 (sempre o lance matematicamente superior)
+  // - Hard: 8 (firme e competitivo)
+  // - Medium: 140 (ampla margem para variedade humana e acessível, permitindo vitórias ao jogador)
+  // - Easy: 260
+  const margin = difficulty === 'expert' ? 0 : difficulty === 'hard' ? 8 : difficulty === 'medium' ? 140 : 260
   const topCandidates = scoredMoves.filter((sm) => Math.abs(sm.score - bestScore) <= margin)
 
-  // On hard, always take the best evaluation
-  if (difficulty === 'hard' || topCandidates.length === 1) {
+  // No expert ou quando só há 1 candidato de ponta, joga o melhor absoluto
+  if (difficulty === 'expert' || topCandidates.length === 1) {
     return topCandidates[0].move
   }
 
-  // On medium/easy, pick randomly among top candidate moves to keep play dynamic and varied
+  // No hard, 90% das vezes escolhe o melhor absoluto
+  if (difficulty === 'hard' && Math.random() < 0.9) {
+    return topCandidates[0].move
+  }
+
+  // No medium/easy, sorteia entre os candidatos válidos para um jogo natural e equilibrado
   const chosen = topCandidates[Math.floor(Math.random() * topCandidates.length)]
   return chosen.move
 }
