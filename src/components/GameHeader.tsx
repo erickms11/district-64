@@ -1,7 +1,7 @@
 import React from 'react'
 import type { Color, PieceSymbol, GameMode, CpuDifficulty, PeerEmote } from '../types'
 import { ChessPiece } from './ChessPiece'
-import { RotateCw, Flag, Home, Clock } from 'lucide-react'
+import { RotateCw, Flag, Home, Clock, Volume2, VolumeX } from 'lucide-react'
 import { EmoteSelector } from './EmoteSelector'
 
 interface GameHeaderProps {
@@ -16,6 +16,8 @@ interface GameHeaderProps {
   activeOpponentEmote?: PeerEmote | null
   capturedByOpponent: PieceSymbol[]
   capturedByMe: PieceSymbol[]
+  isMusicMuted?: boolean
+  onToggleMusic?: () => void
   onSendEmote?: (emote: PeerEmote) => void
   onRotateBoard: () => void
   onSurrender: () => void
@@ -39,6 +41,8 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
   isCpuPlaying,
   activeOpponentEmote,
   capturedByOpponent,
+  onToggleMusic,
+  isMusicMuted = false,
   onSendEmote,
   onRotateBoard,
   onSurrender,
@@ -49,12 +53,12 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
   const getOpponentTitle = () => {
     if (mode === 'cpu') {
       const diffLabel = difficulty === 'hard' ? 'Elite da Capital' : difficulty === 'medium' ? 'Pacificador' : 'Recruta'
-      return `Sentinela (${diffLabel})`
+      return opponentColor === 'w' ? `Distrito 12 (${diffLabel})` : `Pacificador (${diffLabel})`
     }
     if (mode === 'local') {
-      return opponentColor === 'w' ? 'Tributo dos Distritos' : 'Tributo da Capital'
+      return opponentColor === 'w' ? 'Distrito 12 (Vermelho)' : 'Pacificadores (Branco)'
     }
-    return opponentColor === 'w' ? 'Distrito 12 (Oponente)' : 'A Capital (Oponente)'
+    return opponentColor === 'w' ? 'Distrito 12 (Oponente)' : 'Pacificadores da Capital (Oponente)'
   }
 
   const formattedTime = formatTime(timeRemaining)
@@ -63,13 +67,28 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
     <div className="w-full max-w-[420px] flex flex-col gap-2 mb-1.5 select-none relative">
       {/* Top Bar: Controls & Room Code */}
       <div className="flex items-center justify-between px-1">
-        <button
-          onClick={onExit}
-          className="p-2 rounded-xl bg-[#0e1017] hover:bg-[#151824] text-amber-200/80 hover:text-white border border-amber-900/40 shadow"
-          title="Sair para o Menu"
-        >
-          <Home className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={onExit}
+            className="p-2 rounded-xl bg-[#0e1017] hover:bg-[#151824] text-amber-200/80 hover:text-white border border-amber-900/40 shadow transition"
+            title="Sair para o Menu"
+          >
+            <Home className="w-4 h-4" />
+          </button>
+          {onToggleMusic && (
+            <button
+              onClick={onToggleMusic}
+              className="p-2 rounded-xl bg-[#0e1017] hover:bg-[#151824] text-amber-200/80 hover:text-white border border-amber-900/40 shadow transition"
+              title={isMusicMuted ? 'Ativar Música' : 'Silenciar Música'}
+            >
+              {isMusicMuted ? (
+                <VolumeX className="w-4 h-4 text-slate-500" />
+              ) : (
+                <Volume2 className="w-4 h-4 text-amber-400" />
+              )}
+            </button>
+          )}
+        </div>
 
         {mode === 'online' && roomCode && (
           <div className="px-3 py-1 bg-gradient-to-r from-amber-950/60 to-orange-950/60 border border-amber-600/40 rounded-full text-[11px] font-mono font-bold text-amber-300 shadow">

@@ -60,3 +60,128 @@
   animation: pieceSlide 280ms cubic-bezier(0.2, 0.8, 0.25, 1) forwards;
   will-change: transform;
 }
+
+/* 👑 Alerta de Rei em Cheque: Brilho elegante e compacto no centro do tabuleiro, sem sair das bordas */
+@keyframes checkGlow {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+    filter: drop-shadow(0 0 4px rgba(239, 68, 68, 0.4));
+  }
+  15% {
+    opacity: 1;
+    transform: scale(1.03);
+    filter: drop-shadow(0 0 18px rgba(239, 68, 68, 0.95)) drop-shadow(0 0 28px rgba(245, 158, 11, 0.85));
+  }
+  30% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 14px rgba(239, 68, 68, 0.9)) drop-shadow(0 0 22px rgba(245, 158, 11, 0.75));
+  }
+  75% {
+    opacity: 1;
+    transform: scale(1);
+    filter: drop-shadow(0 0 14px rgba(239, 68, 68, 0.9)) drop-shadow(0 0 22px rgba(245, 158, 11, 0.75));
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.06);
+    filter: drop-shadow(0 0 20px rgba(239, 68, 68, 0));
+  }
+}
+
+.animate-check-glow {
+  animation: checkGlow 1.7s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  will-change: transform, opacity, filter;
+}
+
+/* 🔥 Chamas em volta do tabuleiro (Teste de Efeito da Arena) */
+@keyframes flameAura {
+  0% {
+    box-shadow: 
+      0 0 15px rgba(245, 158, 11, 0.65),
+      0 0 35px rgba(239, 68, 68, 0.5),
+      0 0 65px rgba(185, 28, 28, 0.35),
+      inset 0 0 12px rgba(251, 191, 36, 0.35);
+    opacity: 0.88;
+  }
+  30% {
+    box-shadow: 
+      0 0 25px rgba(249, 115, 22, 0.85),
+      0 0 55px rgba(220, 38, 38, 0.7),
+      0 0 85px rgba(185, 28, 28, 0.45),
+      inset 0 0 18px rgba(254, 240, 138, 0.45);
+    opacity: 1;
+  }
+  65% {
+    box-shadow: 
+      0 0 18px rgba(245, 158, 11, 0.7),
+      0 0 42px rgba(239, 68, 68, 0.6),
+      0 0 70px rgba(185, 28, 28, 0.38),
+      inset 0 0 14px rgba(251, 191, 36, 0.4);
+    opacity: 0.92;
+  }
+  100% {
+    box-shadow: 
+      0 0 15px rgba(245, 158, 11, 0.65),
+      0 0 35px rgba(239, 68, 68, 0.5),
+      0 0 65px rgba(185, 28, 28, 0.35),
+      inset 0 0 12px rgba(251, 191, 36, 0.35);
+    opacity: 0.88;
+  }
+}
+
+.animate-flame-aura {
+  animation: flameAura 2s ease-in-out infinite alternate;
+}
+
+@keyframes flameLick {
+  0%, 100% {
+    transform: scaleY(1) scaleX(1) translateY(0);
+  }
+  25% {
+    transform: scaleY(1.15) scaleX(0.92) translateY(-2px);
+  }
+  50% {
+    transform: scaleY(0.92) scaleX(1.08) translateY(1px);
+  }
+  75% {
+    transform: scaleY(1.2) scaleX(0.95) translateY(-3px);
+  }
+}
+
+.animate-flame-lick-1 {
+  animation: flameLick 1.6s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+
+.animate-flame-lick-2 {
+  animation: flameLick 2.1s ease-in-out infinite reverse;
+  transform-origin: bottom center;
+}
+
+@keyframes emberFloat {
+  0% {
+    transform: translateY(0) translateX(0) scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: translateY(-16px) translateX(6px) scale(1.2);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-32px) translateX(-5px) scale(0.6);
+    opacity: 0;
+  }
+}
+
+.animate-ember-1 {
+  animation: emberFloat 1.8s ease-out infinite;
+}
+
+.animate-ember-2 {
+  animation: emberFloat 2.4s ease-out infinite 0.6s;
+}
+
+.animate-ember-3 {
+  animation: emberFloat 2.1s ease-out infinite 1.2s;
+}

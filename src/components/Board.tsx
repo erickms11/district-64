@@ -1,6 +1,7 @@
-import React, { useMemo } from 'react'
+import React from 'react'
 import type { Chess, Square, Color, Move } from 'chess.js'
 import { ChessPiece, type PieceTheme } from './ChessPiece'
+import type { BoardTheme } from '../types'
 import { getBoardSquares, getSquareCoords } from '../utils/chess'
 
 interface BoardProps {
@@ -9,16 +10,79 @@ interface BoardProps {
   isFlipped: boolean
   isMyTurn?: boolean
   pieceTheme?: PieceTheme
+  boardTheme?: BoardTheme
   selectedSquare: Square | null
   validMoves: Move[]
   lastMove?: { from: Square; to: Square } | null
   onSquareClick: (square: Square) => void
 }
 
+// 🦅 Símbolo do Tordo (Mockingjay) com a Flecha e o Anel - Marca d'água sutil e elegante no centro do tabuleiro
+const MockingjayWatermark: React.FC = () => (
+  <svg
+    viewBox="0 0 200 200"
+    className="w-56 h-56 sm:w-64 sm:h-64 pointer-events-none select-none text-amber-500 opacity-[0.11]"
+    fill="currentColor"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <defs>
+      <linearGradient id="tordoGold" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#f59e0b" />
+        <stop offset="50%" stopColor="#d97706" />
+        <stop offset="100%" stopColor="#78350f" />
+      </linearGradient>
+    </defs>
+    {/* Outer Circular Ring of the Hunger Games Emblem */}
+    <circle cx="100" cy="100" r="86" fill="none" stroke="url(#tordoGold)" strokeWidth="4.5" />
+    <circle cx="100" cy="100" r="80" fill="none" stroke="url(#tordoGold)" strokeWidth="1.5" strokeDasharray="4 4" opacity="0.6" />
+
+    {/* The Arrow (shaft, tip, fletching) passing diagonally */}
+    <line x1="32" y1="168" x2="162" y2="38" stroke="url(#tordoGold)" strokeWidth="4.5" strokeLinecap="round" />
+    <polygon points="176,24 154,34 166,46" fill="url(#tordoGold)" />
+    <polygon points="32,168 22,162 26,176" fill="url(#tordoGold)" />
+
+    {/* The Mockingjay Wings and Silhouette */}
+    <path
+      d="M 100 102 C 86 86 70 74 52 68 C 66 62 86 64 98 72 C 106 60 120 44 144 38 C 136 50 130 64 128 78 C 138 74 152 72 168 76 C 150 82 134 88 124 96 C 134 104 142 118 148 136 C 136 126 124 118 114 114 C 112 126 108 142 98 162 C 100 144 102 128 102 116 C 94 122 84 130 72 144 C 80 130 88 118 94 110 Z"
+      fill="url(#tordoGold)"
+    />
+    {/* Head & Beak holding arrow */}
+    <path
+      d="M 112 82 C 114 74 120 70 128 72 C 136 74 142 70 148 64 C 142 74 134 80 128 84 C 120 86 114 84 112 82 Z"
+      fill="url(#tordoGold)"
+    />
+  </svg>
+)
+
+// 🔥 Brilho lateral e faíscas ao redor do tabuleiro (Arena Catching Fire)
+const BoardFlames: React.FC = () => (
+  <div className="absolute -inset-2 sm:-inset-2.5 rounded-2xl pointer-events-none z-0 overflow-visible animate-flame-aura">
+    {/* Borda lateral brilhante com efeito de brasa viva */}
+    <div className="absolute inset-0 rounded-2xl border border-orange-500/50 ring-1 ring-amber-400/40" />
+
+    {/* Faíscas e brasas flutuantes ao redor do tabuleiro */}
+    <div className="absolute -bottom-1 left-6 w-2 h-2 rounded-full bg-amber-400 blur-[0.5px] shadow-[0_0_8px_#f59e0b] animate-ember-1" />
+    <div className="absolute -bottom-2 left-1/3 w-1.5 h-1.5 rounded-full bg-orange-400 blur-[0.5px] shadow-[0_0_8px_#ea580c] animate-ember-2" />
+    <div className="absolute -bottom-1 right-1/4 w-2 h-2 rounded-full bg-yellow-300 blur-[0.5px] shadow-[0_0_8px_#fde047] animate-ember-3" />
+    <div className="absolute -bottom-2 right-8 w-1.5 h-1.5 rounded-full bg-amber-400 blur-[0.5px] shadow-[0_0_8px_#f59e0b] animate-ember-1" />
+
+    {/* Faíscas laterais */}
+    <div className="absolute top-1/3 -left-1.5 w-1.5 h-1.5 rounded-full bg-orange-400 blur-[0.5px] shadow-[0_0_8px_#ea580c] animate-ember-2" />
+    <div className="absolute top-2/3 -left-1 w-2 h-2 rounded-full bg-amber-400 blur-[0.5px] shadow-[0_0_8px_#f59e0b] animate-ember-3" />
+    <div className="absolute top-1/2 -right-1.5 w-2 h-2 rounded-full bg-amber-300 blur-[0.5px] shadow-[0_0_8px_#fde047] animate-ember-1" />
+    <div className="absolute top-3/4 -right-1 w-1.5 h-1.5 rounded-full bg-orange-400 blur-[0.5px] shadow-[0_0_8px_#ea580c] animate-ember-2" />
+
+    {/* Faíscas no topo */}
+    <div className="absolute -top-1 left-1/4 w-1.5 h-1.5 rounded-full bg-orange-400 blur-[0.5px] shadow-[0_0_8px_#ea580c] animate-ember-2" />
+    <div className="absolute -top-1.5 right-1/3 w-2 h-2 rounded-full bg-amber-300 blur-[0.5px] shadow-[0_0_8px_#f59e0b] animate-ember-3" />
+  </div>
+)
+
 export const Board: React.FC<BoardProps> = ({
   chess,
   isFlipped,
-  pieceTheme = 'staunton',
+  pieceTheme = 'duolingo',
+  boardTheme = 'arena',
   selectedSquare,
   validMoves,
   lastMove,
@@ -32,167 +96,35 @@ export const Board: React.FC<BoardProps> = ({
   const validDestinations = new Map<Square, Move>()
   validMoves.forEach((m) => validDestinations.set(m.to as Square, m))
 
-  // Fiery trajectory path calculation for the last move
-  const movePath = useMemo(() => {
-    if (!lastMove) return null
-
-    const fromCoords = getSquareCoords(lastMove.from, isFlipped)
-    const toCoords = getSquareCoords(lastMove.to, isFlipped)
-
-    const x1 = fromCoords.col * 100 + 50
-    const y1 = fromCoords.row * 100 + 50
-    const x2 = toCoords.col * 100 + 50
-    const y2 = toCoords.row * 100 + 50
-
-    const colDiff = Math.abs(fromCoords.col - toCoords.col)
-    const rowDiff = Math.abs(fromCoords.row - toCoords.row)
-    const isKnight = (colDiff === 1 && rowDiff === 2) || (colDiff === 2 && rowDiff === 1)
-
-    if (isKnight) {
-      // 2-segment L path for knight trajectory
-      const cornerX = Math.abs(toCoords.row - fromCoords.row) === 2 ? x1 : x2
-      const cornerY = Math.abs(toCoords.row - fromCoords.row) === 2 ? y2 : y1
-
-      const finalDx = x2 - cornerX
-      const finalDy = y2 - cornerY
-      const finalLen = Math.hypot(finalDx, finalDy)
-      const ux = finalDx / finalLen
-      const uy = finalDy / finalLen
-
-      const endOffset = 24
-      const headLength = 22
-      const headWidth = 18
-
-      const tipX = x2 - ux * endOffset
-      const tipY = y2 - uy * endOffset
-      const baseX = tipX - ux * headLength
-      const baseY = tipY - uy * headLength
-
-      const nx = -uy
-      const ny = ux
-      const leftX = baseX + nx * (headWidth / 2)
-      const leftY = baseY + ny * (headWidth / 2)
-      const rightX = baseX - nx * (headWidth / 2)
-      const rightY = baseY - ny * (headWidth / 2)
-
-      return {
-        d: `M ${x1} ${y1} L ${cornerX} ${cornerY} L ${baseX} ${baseY}`,
-        headPolygon: `${tipX},${tipY} ${leftX},${leftY} ${rightX},${rightY}`,
-        originX: x1,
-        originY: y1
-      }
-    } else {
-      const dx = x2 - x1
-      const dy = y2 - y1
-      const len = Math.hypot(dx, dy)
-      if (len === 0) return null
-
-      const ux = dx / len
-      const uy = dy / len
-
-      const endOffset = 24
-      const headLength = 22
-      const headWidth = 18
-
-      const tipX = x2 - ux * endOffset
-      const tipY = y2 - uy * endOffset
-      const baseX = tipX - ux * headLength
-      const baseY = tipY - uy * headLength
-
-      const nx = -uy
-      const ny = ux
-      const leftX = baseX + nx * (headWidth / 2)
-      const leftY = baseY + ny * (headWidth / 2)
-      const rightX = baseX - nx * (headWidth / 2)
-      const rightY = baseY - ny * (headWidth / 2)
-
-      return {
-        d: `M ${x1} ${y1} L ${baseX} ${baseY}`,
-        headPolygon: `${tipX},${tipY} ${leftX},${leftY} ${rightX},${rightY}`,
-        originX: x1,
-        originY: y1
-      }
-    }
-  }, [lastMove, isFlipped])
+  const isClean = boardTheme === 'clean'
 
   return (
-    <div className="relative w-full max-w-[420px] aspect-square rounded-2xl p-2.5 sm:p-3 bg-gradient-to-b from-[#331c0e] via-[#1f1007] to-[#0d0704] border-2 border-amber-600/50 shadow-2xl shadow-black ring-1 ring-amber-500/20">
-      {/* Decorative Arena Cornucopia Rivets */}
-      <div className="absolute top-1 left-1.5 w-1.5 h-1.5 rounded-full bg-amber-500/60 shadow" />
-      <div className="absolute top-1 right-1.5 w-1.5 h-1.5 rounded-full bg-amber-500/60 shadow" />
-      <div className="absolute bottom-1 left-1.5 w-1.5 h-1.5 rounded-full bg-amber-500/60 shadow" />
-      <div className="absolute bottom-1 right-1.5 w-1.5 h-1.5 rounded-full bg-amber-500/60 shadow" />
+    <div
+      className={`relative w-full max-w-[420px] aspect-square rounded-2xl p-2.5 sm:p-3 shadow-2xl shadow-black transition-colors ${
+        isClean
+          ? 'bg-gradient-to-b from-[#1e2530] via-[#141a22] to-[#0c1015] border-2 border-slate-700/80 ring-1 ring-slate-600/40'
+          : 'bg-gradient-to-b from-[#3a1d0c] via-[#211006] to-[#0f0602] border-2 border-amber-600/70 ring-1 ring-amber-500/40'
+      }`}
+    >
+      {/* 🔥 Chamas em volta do tabuleiro (Teste de Efeito da Arena) */}
+      {!isClean && <BoardFlames />}
+
+      {/* Decorative Rivets */}
+      <div className={`absolute top-1 left-1.5 w-1.5 h-1.5 rounded-full shadow ${isClean ? 'bg-slate-400/60' : 'bg-gradient-to-br from-amber-400 to-yellow-600 ring-1 ring-amber-300/60'}`} />
+      <div className={`absolute top-1 right-1.5 w-1.5 h-1.5 rounded-full shadow ${isClean ? 'bg-slate-400/60' : 'bg-gradient-to-br from-amber-400 to-yellow-600 ring-1 ring-amber-300/60'}`} />
+      <div className={`absolute bottom-1 left-1.5 w-1.5 h-1.5 rounded-full shadow ${isClean ? 'bg-slate-400/60' : 'bg-gradient-to-br from-amber-400 to-yellow-600 ring-1 ring-amber-300/60'}`} />
+      <div className={`absolute bottom-1 right-1.5 w-1.5 h-1.5 rounded-full shadow ${isClean ? 'bg-slate-400/60' : 'bg-gradient-to-br from-amber-400 to-yellow-600 ring-1 ring-amber-300/60'}`} />
 
       {/* Board Inner Grid */}
-      <div className="relative w-full h-full grid grid-cols-8 grid-rows-8 rounded-xl overflow-hidden border-2 border-[#422411] shadow-inner select-none touch-manipulation">
-        {/* SVG Arrow & Trajectory Path showing where the piece moved */}
-        {movePath && (
-          <svg
-            className="absolute inset-0 w-full h-full pointer-events-none z-10 overflow-visible"
-            viewBox="0 0 800 800"
-          >
-            <defs>
-              <filter id="flamePathGlow" x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur stdDeviation="5" result="blur" />
-                <feMerge>
-                  <feMergeNode in="blur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-            </defs>
-
-            {/* Outer flame glow */}
-            <path
-              d={movePath.d}
-              fill="none"
-              stroke="#ea580c"
-              strokeWidth="9"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              opacity="0.8"
-              filter="url(#flamePathGlow)"
-            />
-
-            {/* Inner burning energy core */}
-            <path
-              d={movePath.d}
-              fill="none"
-              stroke="#fef08a"
-              strokeWidth="3.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeDasharray="10 6"
-              className="animate-pulse"
-            />
-
-            {/* Origin node ring */}
-            <circle
-              cx={movePath.originX}
-              cy={movePath.originY}
-              r="12"
-              fill="#ea580c"
-              fillOpacity="0.45"
-              stroke="#f97316"
-              strokeWidth="3"
-            />
-            <circle
-              cx={movePath.originX}
-              cy={movePath.originY}
-              r="4.5"
-              fill="#fef08a"
-            />
-
-            {/* Arrowhead */}
-            <polygon
-              points={movePath.headPolygon}
-              fill="#ea580c"
-              stroke="#fef08a"
-              strokeWidth="2.5"
-              strokeLinejoin="round"
-              filter="url(#flamePathGlow)"
-            />
-          </svg>
-        )}
+      <div
+        className={`relative w-full h-full grid grid-cols-8 grid-rows-8 rounded-xl overflow-hidden border-2 shadow-inner select-none touch-manipulation ${
+          isClean ? 'border-[#334155]' : 'border-[#4a240f]'
+        }`}
+      >
+        {/* Marca d'água elegante do Tordo no centro do tabuleiro */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+          <MockingjayWatermark />
+        </div>
 
         {squares.map((sq) => {
           const file = sq[0]
@@ -206,7 +138,6 @@ export const Board: React.FC<BoardProps> = ({
           const isTargetMove = validDestinations.has(sq)
           const targetMove = validDestinations.get(sq)
           const isKingInCheck = inCheck && piece?.type === 'k' && piece?.color === turn
-          const isLastMoveFrom = lastMove?.from === sq
           const isLastMoveTo = lastMove?.to === sq
 
           // Calculate sliding translation if this piece just arrived at destination
@@ -222,11 +153,14 @@ export const Board: React.FC<BoardProps> = ({
             } as React.CSSProperties
           }
 
-          // Hunger Games Arena Square Palette:
-          // Light: Areia Dourada da Arena (#ecdcb9)
-          // Dark: Madeira Queimada / Terra Calcinada (#734b26)
-          const bgSquare = isDark ? 'bg-[#734b26]' : 'bg-[#ecdcb9]'
-          const coordColor = isDark ? 'text-[#ecdcb9]/60' : 'text-[#543519]'
+          // Square Palette (Hunger Games Arena or Clean Duolingo):
+          const bgSquare = isClean
+            ? isDark
+              ? 'bg-[#ebf0f5]'
+              : 'bg-[#ffffff]'
+            : isDark
+            ? 'bg-[#693a19]'
+            : 'bg-[#ebdcb9]'
 
           return (
             <div
@@ -242,11 +176,6 @@ export const Board: React.FC<BoardProps> = ({
                 WebkitTapHighlightColor: 'transparent',
               }}
             >
-              {/* Last Move Origin: dashed fiery border showing where the piece came from */}
-              {isLastMoveFrom && !isSelected && (
-                <div className="absolute inset-0.5 border-2 border-dashed border-orange-500/70 rounded pointer-events-none z-15" />
-              )}
-
               {/* Last Move Destination: prominent high-contrast fiery flame border */}
               {isLastMoveTo && !isSelected && (
                 <div className="absolute inset-0 border-[3px] border-orange-500 rounded-sm pointer-events-none z-15 shadow-[0_0_10px_rgba(249,115,22,0.85),inset_0_0_8px_rgba(249,115,22,0.45)]">
@@ -255,24 +184,12 @@ export const Board: React.FC<BoardProps> = ({
                 </div>
               )}
 
-              {/* Coordinate label for rank (left edge) and file (bottom edge) */}
-              {((isFlipped ? file === 'h' : file === 'a')) && (
-                <span className={`absolute top-0.5 left-1 text-[9px] font-bold pointer-events-none select-none z-10 ${coordColor}`}>
-                  {rank}
-                </span>
-              )}
-              {((isFlipped ? rank === '8' : rank === '1')) && (
-                <span className={`absolute bottom-0.5 right-1 text-[9px] font-bold pointer-events-none select-none z-10 ${coordColor}`}>
-                  {file}
-                </span>
-              )}
-
               {/* Chess Piece with smooth sliding animation on destination square */}
               {piece && (
                 <div
                   key={isLastMoveTo && lastMove ? `${lastMove.from}-${lastMove.to}` : sq}
                   style={slideStyle}
-                  className={`w-full h-full p-1 sm:p-1.5 flex items-center justify-center transition-transform ${
+                  className={`w-full h-full p-0.5 flex items-center justify-center transition-transform ${
                     isSelected
                       ? 'scale-110 z-30'
                       : isLastMoveTo

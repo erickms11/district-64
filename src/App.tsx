@@ -1,18 +1,18 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { Chess } from 'chess.js'
 import type { Square, PieceSymbol, Move } from 'chess.js'
-import type { GameMode, Color, GameStatus, PeerMessage, CpuDifficulty, TimeControl, PeerEmote } from './types'
+import type { GameMode, Color, GameStatus, PeerMessage, CpuDifficulty, TimeControl, PeerEmote, PieceTheme, BoardTheme } from './types'
 import { evaluateGameStatus, computeCapturedPieces } from './utils/chess'
 import { getBestCpuMove } from './utils/ai'
 import { recordMatchResult, resetPlayerStats } from './utils/stats'
 import { peerService } from './services/peerService'
 import type { ConnectionState } from './services/peerService'
 import { haptics } from './utils/haptics'
+import { bgMusic } from './utils/audio'
 import { Lobby } from './components/Lobby'
 import { Board } from './components/Board'
 import { GameHeader } from './components/GameHeader'
 import { GameFooter } from './components/GameFooter'
-import { MoveHistory } from './components/MoveHistory'
 import { PromotionModal } from './components/PromotionModal'
 import { GameOverModal } from './components/GameOverModal'
 import { SettingsModal } from './components/SettingsModal'
@@ -22,6 +22,17 @@ export const App: React.FC = () => {
   const [view, setView] = useState<'lobby' | 'game'>('lobby')
   const [gameMode, setGameMode] = useState<GameMode>('local')
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [isMusicMuted, setIsMusicMuted] = useState(() => bgMusic.getIsMuted())
+
+  // Inicializa música de fundo no carregamento
+  useEffect(() => {
+    bgMusic.init()
+  }, [])
+
+  const handleToggleMusic = () => {
+    const muted = bgMusic.toggleMute()
+    setIsMusicMuted(muted)
+  }
 
   // Configurable Settings with LocalStorage persistence
   const [cpuDifficulty, setCpuDifficulty] = useState<CpuDifficulty>(() => {
@@ -35,6 +46,23 @@ export const App: React.FC = () => {
     return saved !== null ? (Number(saved) as TimeControl) : 0
   })
   const [clocks, setClocks] = useState<{ w: number; b: number }>({ w: 0, b: 0 })
+
+  // Visual Theme States with LocalStorage persistence
+  const [pieceTheme, setPieceTheme] = useState<PieceTheme>(() => {
+    return (localStorage.getItem('d64_piece_theme') as PieceTheme) || 'duolingo'
+  })
+  const [boardTheme, setBoardTheme] = useState<BoardTheme>('arena')
+
+  // Save settings when changed
+  const handleSelectPieceTheme = (theme: PieceTheme) => {
+    setPieceTheme(theme)
+    localStorage.setItem('d64_piece_theme', theme)
+  }
+
+  const handleSelectBoardTheme = (theme: BoardTheme) => {
+    setBoardTheme(theme)
+    localStorage.setItem('d64_board_theme', theme)
+  }
 
   // Peer & Room state
   const [roomCode, setRoomCode] = useState<string | null>(null)
@@ -52,6 +80,8 @@ export const App: React.FC = () => {
   const [lastMove, setLastMove] = useState<{ from: Square; to: Square } | null>(null)
   const [pendingPromotion, setPendingPromotion] = useState<{ from: Square; to: Square } | null>(null)
   const [gameStatus, setGameStatus] = useState<GameStatus>(() => evaluateGameStatus(chess))
+  const [showCheckAlert, setShowCheckAlert] = useState(false)
+  const checkTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const isCpuThinking = useRef(false)
   const [isCpuPlaying, setIsCpuPlaying] = useState(false)
@@ -79,8 +109,15 @@ export const App: React.FC = () => {
     const status = evaluateGameStatus(chess)
     setGameStatus(status)
 
-    if (status.inCheck) {
+    if (status.inCheck && !status.isOver) {
       haptics.check()
+      setShowCheckAlert(true)
+      if (checkTimeoutRef.current) clearTimeout(checkTimeoutRef.current)
+      checkTimeoutRef.current = setTimeout(() => {
+        setShowCheckAlert(false)
+      }, 1800)
+    } else {
+      setShowCheckAlert(false)
     }
   }, [chess])
 
@@ -384,6 +421,7 @@ export const App: React.FC = () => {
     hasRecordedStats.current = false
     isCpuThinking.current = false
     setIsCpuPlaying(false)
+    setShowCheckAlert(false)
     chess.reset()
     setLastMove(null)
     setSelectedSquare(null)
@@ -401,6 +439,7 @@ export const App: React.FC = () => {
     hasRecordedStats.current = false
     isCpuThinking.current = false
     setIsCpuPlaying(false)
+    setShowCheckAlert(false)
     peerService.cleanup()
     setRoomCode(null)
     setConnectionState('idle')
@@ -521,6 +560,8 @@ export const App: React.FC = () => {
           onStartLocal={handleStartLocal}
           onStartCpu={handleStartCpu}
           onOpenSettings={() => setIsSettingsOpen(true)}
+          isMusicMuted={isMusicMuted}
+          onToggleMusic={handleToggleMusic}
           timeControl={timeControl}
           cpuDifficulty={cpuDifficulty}
           cpuPlayerColor={cpuPlayerColor}
@@ -536,6 +577,8 @@ export const App: React.FC = () => {
             playerColor={playerColor}
             currentTurn={turn}
             isMyTurn={isMyTurn}
+            isMusicMuted={isMusicMuted}
+            onToggleMusic={handleToggleMusic}
             roomCode={roomCode || undefined}
             difficulty={cpuDifficulty}
             timeRemaining={timeControl > 0 ? clocks[opponentColor] : undefined}
@@ -554,14 +597,13 @@ export const App: React.FC = () => {
             key={fen}
             chess={chess}
             isFlipped={isFlipped}
+            pieceTheme={pieceTheme}
+            boardTheme={boardTheme}
             selectedSquare={selectedSquare}
             validMoves={validMoves}
             lastMove={lastMove}
             onSquareClick={handleSquareClick}
           />
-
-          {/* Move History Strip */}
-          <MoveHistory history={chess.history()} />
 
           {/* Footer & Self Info */}
           <GameFooter
@@ -573,10 +615,22 @@ export const App: React.FC = () => {
             capturedByMe={playerColor === 'w' ? captured.b : captured.w}
           />
 
+          {/* 👑 Alerta de Rei em Cheque: Compacto e perfeitamente contido no tabuleiro, sem fundo */}
+          {showCheckAlert && !gameStatus.isOver && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none select-none px-4">
+              <div className="animate-check-glow max-w-[280px] flex items-center justify-center">
+                <span className="text-xl sm:text-2xl font-black font-cinzel tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-yellow-100 via-red-500 to-amber-300 drop-shadow-[0_0_18px_rgba(239,68,68,0.95)] whitespace-nowrap text-center">
+                  Rei em Cheque!
+                </span>
+              </div>
+            </div>
+          )}
+
           {/* Promotion Modal */}
           {pendingPromotion && (
             <PromotionModal
               color={chess.turn()}
+              pieceTheme={pieceTheme}
               onSelect={handleSelectPromotion}
               onCancel={() => setPendingPromotion(null)}
             />
@@ -606,6 +660,10 @@ export const App: React.FC = () => {
         onSelectCpuDifficulty={handleSelectCpuDifficulty}
         cpuPlayerColor={cpuPlayerColor}
         onSelectCpuPlayerColor={handleSelectCpuPlayerColor}
+        pieceTheme={pieceTheme}
+        onSelectPieceTheme={handleSelectPieceTheme}
+        boardTheme={boardTheme}
+        onSelectBoardTheme={handleSelectBoardTheme}
         onResetStats={() => resetPlayerStats()}
       />
     </div>

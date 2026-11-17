@@ -8,7 +8,7 @@ interface GameFooterProps {
   playerColor: Color
   currentTurn?: Color
   isMyTurn: boolean
-  inCheck: boolean
+  inCheck?: boolean
   timeRemaining?: number
   capturedByMe: PieceSymbol[]
 }
@@ -24,7 +24,6 @@ export const GameFooter: React.FC<GameFooterProps> = ({
   mode,
   playerColor,
   isMyTurn,
-  inCheck,
   timeRemaining,
   capturedByMe
 }) => {
@@ -32,9 +31,9 @@ export const GameFooter: React.FC<GameFooterProps> = ({
 
   const getMyTitle = () => {
     if (mode === 'local') {
-      return playerColor === 'w' ? 'Tributo dos Distritos' : 'Tributo da Capital'
+      return playerColor === 'w' ? 'Distrito 12 (Vermelho)' : 'Pacificadores (Branco)'
     }
-    return playerColor === 'w' ? 'Distrito 12 (Você)' : 'A Capital (Você)'
+    return playerColor === 'w' ? 'Distrito 12 - Katniss (Você)' : 'Pacificadores da Capital (Você)'
   }
 
   const formattedTime = formatTime(timeRemaining)
@@ -91,13 +90,6 @@ export const GameFooter: React.FC<GameFooterProps> = ({
           )}
         </div>
       </div>
-
-      {/* Check Alert Bar */}
-      {inCheck && (
-        <div className="w-full py-1.5 px-3 bg-gradient-to-r from-red-950/90 via-red-900/80 to-red-950/90 border border-red-500/80 rounded-xl text-center text-xs font-bold text-red-200 animate-pulse tracking-wider shadow-lg shadow-red-950/50 font-cinzel">
-          ⚠️ O REI ESTÁ EM XEQUE NA ARENA!
-        </div>
-      )}
     </div>
   )
 }

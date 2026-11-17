@@ -1,6 +1,6 @@
 import React from 'react'
-import type { CpuDifficulty, TimeControl, Color } from '../types'
-import { X, Clock, Bot, Trash2 } from 'lucide-react'
+import type { CpuDifficulty, TimeControl, Color, PieceTheme, BoardTheme } from '../types'
+import { X, Clock, Bot, Trash2, Palette, Sparkles } from 'lucide-react'
 
 interface SettingsModalProps {
   isOpen: boolean
@@ -11,6 +11,10 @@ interface SettingsModalProps {
   onSelectCpuDifficulty: (diff: CpuDifficulty) => void
   cpuPlayerColor: Color
   onSelectCpuPlayerColor: (color: Color) => void
+  pieceTheme: PieceTheme
+  onSelectPieceTheme: (theme: PieceTheme) => void
+  boardTheme: BoardTheme
+  onSelectBoardTheme: (theme: BoardTheme) => void
   onResetStats: () => void
 }
 
@@ -23,6 +27,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onSelectCpuDifficulty,
   cpuPlayerColor,
   onSelectCpuPlayerColor,
+  pieceTheme,
+  onSelectPieceTheme,
+  boardTheme,
+  onSelectBoardTheme,
   onResetStats
 }) => {
   if (!isOpen) return null
@@ -106,26 +114,86 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               onClick={() => onSelectCpuPlayerColor('w')}
               className={`py-2 text-[11px] font-bold rounded-xl border transition ${
                 cpuPlayerColor === 'w'
-                  ? 'bg-gradient-to-r from-amber-600/40 to-orange-600/40 border-amber-400 text-amber-200 shadow-sm'
+                  ? 'bg-gradient-to-r from-red-600/40 to-amber-600/40 border-red-400 text-red-200 shadow-sm ring-1 ring-red-500/50'
                   : 'bg-[#08090e] border-slate-800 text-slate-400'
               }`}
             >
-              Distritos (Brancas)
+              🔥 Distrito (Vermelho)
             </button>
             <button
               onClick={() => onSelectCpuPlayerColor('b')}
               className={`py-2 text-[11px] font-bold rounded-xl border transition ${
                 cpuPlayerColor === 'b'
-                  ? 'bg-gradient-to-r from-amber-600/40 to-orange-600/40 border-amber-400 text-amber-200 shadow-sm'
+                  ? 'bg-gradient-to-r from-slate-700/50 to-slate-800/50 border-slate-300 text-slate-100 shadow-sm ring-1 ring-slate-400/50'
                   : 'bg-[#08090e] border-slate-800 text-slate-400'
               }`}
             >
-              A Capital (Pretas)
+              🛡️ Pacificadores (Branco)
             </button>
           </div>
         </div>
 
-        {/* 4. Zerar Estatísticas */}
+        {/* 4. Estilo Visual das Peças */}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[11px] font-semibold text-amber-200/90 flex items-center gap-1.5 font-cinzel">
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            Estilo das Peças
+          </label>
+          <div className="grid grid-cols-2 gap-1.5">
+            <button
+              onClick={() => onSelectPieceTheme('duolingo')}
+              className={`py-2 px-2 text-[11px] font-bold rounded-xl border transition ${
+                pieceTheme === 'duolingo'
+                  ? 'bg-gradient-to-r from-amber-600/40 to-orange-600/40 border-amber-400 text-amber-200 shadow-sm'
+                  : 'bg-[#08090e] border-slate-800 text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              🦉 Duolingo (Moderno)
+            </button>
+            <button
+              onClick={() => onSelectPieceTheme('staunton')}
+              className={`py-2 px-2 text-[11px] font-bold rounded-xl border transition ${
+                pieceTheme === 'staunton'
+                  ? 'bg-gradient-to-r from-amber-600/40 to-orange-600/40 border-amber-400 text-amber-200 shadow-sm'
+                  : 'bg-[#08090e] border-slate-800 text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              ♟️ Staunton Clássico
+            </button>
+          </div>
+        </div>
+
+        {/* 5. Estilo do Tabuleiro */}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[11px] font-semibold text-amber-200/90 flex items-center gap-1.5 font-cinzel">
+            <Palette className="w-3.5 h-3.5 text-amber-400" />
+            Cores do Tabuleiro
+          </label>
+          <div className="grid grid-cols-2 gap-1.5">
+            <button
+              onClick={() => onSelectBoardTheme('clean')}
+              className={`py-2 px-2 text-[11px] font-bold rounded-xl border transition ${
+                boardTheme === 'clean'
+                  ? 'bg-gradient-to-r from-amber-600/40 to-orange-600/40 border-amber-400 text-amber-200 shadow-sm'
+                  : 'bg-[#08090e] border-slate-800 text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              ⚪ Duolingo Clean
+            </button>
+            <button
+              onClick={() => onSelectBoardTheme('arena')}
+              className={`py-2 px-2 text-[11px] font-bold rounded-xl border transition ${
+                boardTheme === 'arena'
+                  ? 'bg-gradient-to-r from-amber-600/40 to-orange-600/40 border-amber-400 text-amber-200 shadow-sm'
+                  : 'bg-[#08090e] border-slate-800 text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              🪵 Arena Hunger Games
+            </button>
+          </div>
+        </div>
+
+        {/* 6. Zerar Estatísticas */}
         <div className="pt-2 border-t border-amber-900/40">
           <button
             onClick={() => {

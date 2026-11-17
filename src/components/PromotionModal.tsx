@@ -1,14 +1,15 @@
 import React from 'react'
-import type { PieceSymbol, Color } from '../types'
+import type { PieceSymbol, Color, PieceTheme } from '../types'
 import { ChessPiece } from './ChessPiece'
 
 interface PromotionModalProps {
   color: Color
+  pieceTheme?: PieceTheme
   onSelect: (piece: PieceSymbol) => void
   onCancel: () => void
 }
 
-export const PromotionModal: React.FC<PromotionModalProps> = ({ color, onSelect, onCancel }) => {
+export const PromotionModal: React.FC<PromotionModalProps> = ({ color, pieceTheme = 'duolingo', onSelect, onCancel }) => {
   const pieces: PieceSymbol[] = ['q', 'r', 'b', 'n']
 
   return (
@@ -25,7 +26,7 @@ export const PromotionModal: React.FC<PromotionModalProps> = ({ color, onSelect,
               className="p-3 bg-slate-800 hover:bg-amber-950/60 active:scale-95 border border-slate-700 hover:border-amber-500/70 rounded-xl transition flex flex-col items-center justify-center"
             >
               <div className="w-10 h-10">
-                <ChessPiece type={piece} color={color} />
+                <ChessPiece type={piece} color={color} theme={pieceTheme} />
               </div>
             </button>
           ))}

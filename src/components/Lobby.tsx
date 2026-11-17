@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import QRCode from 'qrcode'
 import type { CpuDifficulty, Color, TimeControl } from '../types'
 import { loadPlayerStats, type PlayerStats } from '../utils/stats'
+import { DistrictSeal } from './DistrictSeal'
 import {
   Swords,
   Users,
@@ -13,11 +14,10 @@ import {
   Bot,
   Download,
   Trophy,
-  Skull,
-  Flame,
   QrCode,
-  Sparkles,
-  Settings2
+  Settings2,
+  Volume2,
+  VolumeX
 } from 'lucide-react'
 
 interface LobbyProps {
@@ -27,9 +27,11 @@ interface LobbyProps {
   onStartLocal: () => void
   onStartCpu: () => void
   onOpenSettings: () => void
-  timeControl: TimeControl
-  cpuDifficulty: CpuDifficulty
-  cpuPlayerColor: Color
+  isMusicMuted?: boolean
+  onToggleMusic?: () => void
+  timeControl?: TimeControl
+  cpuDifficulty?: CpuDifficulty
+  cpuPlayerColor?: Color
   roomCode: string | null
   connectionStatus: string
   isWaiting: boolean
@@ -42,9 +44,8 @@ export const Lobby: React.FC<LobbyProps> = ({
   onStartLocal,
   onStartCpu,
   onOpenSettings,
-  timeControl,
-  cpuDifficulty,
-  cpuPlayerColor,
+  isMusicMuted = false,
+  onToggleMusic,
   roomCode,
   connectionStatus,
   isWaiting
@@ -133,101 +134,64 @@ export const Lobby: React.FC<LobbyProps> = ({
   const winRate =
     stats.totalGames > 0 ? Math.round((stats.wins / stats.totalGames) * 100) : 0
 
-  const getDifficultyLabel = () => {
-    if (cpuDifficulty === 'easy') return 'Recruta'
-    if (cpuDifficulty === 'medium') return 'Pacificador'
-    return 'Capital Elite'
-  }
-
-  const getTimeLabel = () => {
-    if (timeControl === 0) return 'Sem Tempo'
-    return `${Math.round(timeControl / 60)} min`
-  }
-
   return (
     <div className="w-full max-w-sm flex flex-col items-center px-4 py-4 select-none">
-      {/* Top Header Actions (Settings & Title) */}
+      {/* Top Header Actions (Settings, Music & Title) */}
       <div className="w-full flex items-center justify-between mb-2 px-1">
         <span className="text-[10px] font-mono tracking-widest text-amber-500/70 uppercase">
           PANEM • DISTRICT 64
         </span>
-        <button
-          onClick={onOpenSettings}
-          className="p-2 rounded-xl bg-[#0e1017] hover:bg-[#181c2b] text-amber-300 border border-amber-900/40 shadow-sm flex items-center gap-1.5 text-xs font-cinzel transition"
-          title="Ajustes da Arena"
-        >
-          <Settings2 className="w-4 h-4 text-amber-400" />
-          <span className="text-[11px] font-bold">Ajustes</span>
-        </button>
+        <div className="flex items-center gap-1.5">
+          {onToggleMusic && (
+            <button
+              onClick={onToggleMusic}
+              className="p-1.5 rounded-xl bg-[#0e1017] hover:bg-[#181c2b] text-amber-300 border border-amber-900/40 shadow-sm transition"
+              title={isMusicMuted ? 'Ativar Música' : 'Silenciar Música'}
+            >
+              {isMusicMuted ? (
+                <VolumeX className="w-3.5 h-3.5 text-slate-500" />
+              ) : (
+                <Volume2 className="w-3.5 h-3.5 text-amber-400" />
+              )}
+            </button>
+          )}
+          <button
+            onClick={onOpenSettings}
+            className="p-1.5 px-2.5 rounded-xl bg-[#0e1017] hover:bg-[#181c2b] text-amber-300 border border-amber-900/40 shadow-sm flex items-center gap-1.5 text-xs font-cinzel transition"
+            title="Ajustes da Arena"
+          >
+            <Settings2 className="w-3.5 h-3.5 text-amber-400" />
+            <span className="text-[11px] font-bold">Ajustes</span>
+          </button>
+        </div>
       </div>
 
-      {/* Emblem & Logo Header */}
-      <div className="flex flex-col items-center mb-4 text-center">
-        <div className="relative mb-2">
-          {/* Mockingjay Ring Effect */}
-          <div className="w-18 h-18 rounded-full bg-gradient-to-tr from-amber-600 via-yellow-400 to-amber-200 p-[2.5px] shadow-xl shadow-amber-950/80 animate-pulse">
-            <div className="w-full h-full bg-[#0a0c13] rounded-full flex items-center justify-center border border-amber-600/40">
-              <span className="font-cinzel text-2xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-100 via-amber-300 to-amber-600">
-                64
-              </span>
-            </div>
-          </div>
-          <div className="absolute -bottom-1 -right-1 bg-gradient-to-r from-amber-600 to-orange-600 text-slate-950 text-[9px] font-black px-1.5 py-0.5 rounded shadow-md uppercase tracking-wider border border-amber-300/40">
-            Arena
-          </div>
-        </div>
+      {/* Emblem & Logo Header (Inspirado no Selo Oficial do Distrito 12 de Panem) */}
+      <div className="flex flex-col items-center mb-3 text-center">
+        <DistrictSeal className="w-20 h-20 mb-1.5 animate-fade-in" />
 
-        <h1 className="text-2xl font-black font-cinzel tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 via-amber-400 to-amber-600">
+        <h1 className="text-xl font-black font-cinzel tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 via-amber-400 to-amber-600">
           DISTRICT 64
         </h1>
-        <p className="text-[11px] text-amber-200/70 italic font-cinzel tracking-wider mt-0.5">
+        <p className="text-[10px] text-amber-200/70 italic font-cinzel tracking-wider mt-0.5">
           "Que a sorte esteja sempre a seu favor"
         </p>
       </div>
 
-      {/* Player Stats Card (Registro do Tributo) */}
-      <div className="w-full bg-[#0e1017]/90 border border-amber-600/30 rounded-2xl p-2.5 mb-3 shadow-lg shadow-black/60 backdrop-blur-md">
-        <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 mb-2 px-1">
-          <span className="uppercase tracking-wider text-amber-400/90 font-cinzel text-[10px] flex items-center gap-1">
-            <Sparkles className="w-3 h-3 text-amber-500" />
-            Registro do Tributo
-          </span>
-          <span className="text-slate-500 font-mono text-[10px]">
-            {stats.totalGames} {stats.totalGames === 1 ? 'partida' : 'partidas'}
-          </span>
+      {/* Registro do Tributo - Minimalista e Compacto */}
+      <div className="w-full bg-[#0e1017]/85 border border-amber-900/40 rounded-xl px-3 py-2 mb-3 flex items-center justify-between text-xs shadow-sm backdrop-blur-md">
+        <div className="flex items-center gap-1.5 text-amber-400/90 font-cinzel font-bold text-[10px] uppercase tracking-wider">
+          <Trophy className="w-3.5 h-3.5 text-amber-500" />
+          <span>Tributo</span>
         </div>
-
-        <div className="grid grid-cols-4 gap-1.5 text-center">
-          <div className="bg-[#08090e] border border-amber-900/40 rounded-xl p-1.5 flex flex-col items-center">
-            <div className="flex items-center gap-1 text-emerald-400 text-xs font-bold">
-              <Trophy className="w-3 h-3" />
-              <span>{stats.wins}</span>
-            </div>
-            <span className="text-[9px] text-slate-500 mt-0.5">Vitórias</span>
-          </div>
-
-          <div className="bg-[#08090e] border border-amber-900/40 rounded-xl p-1.5 flex flex-col items-center">
-            <div className="flex items-center gap-1 text-red-400 text-xs font-bold">
-              <Skull className="w-3 h-3" />
-              <span>{stats.losses}</span>
-            </div>
-            <span className="text-[9px] text-slate-500 mt-0.5">Derrotas</span>
-          </div>
-
-          <div className="bg-[#08090e] border border-amber-900/40 rounded-xl p-1.5 flex flex-col items-center">
-            <div className="text-slate-300 text-xs font-bold">
-              <span>{stats.draws}</span>
-            </div>
-            <span className="text-[9px] text-slate-500 mt-0.5">Empates</span>
-          </div>
-
-          <div className="bg-[#08090e] border border-amber-900/40 rounded-xl p-1.5 flex flex-col items-center">
-            <div className="flex items-center gap-0.5 text-amber-400 text-xs font-bold">
-              {stats.currentStreak > 1 && <Flame className="w-3 h-3 text-orange-400 animate-pulse" />}
-              <span>{winRate}%</span>
-            </div>
-            <span className="text-[9px] text-slate-500 mt-0.5">Taxa</span>
-          </div>
+        <div className="flex items-center gap-2.5 font-mono text-[11px]">
+          <span className="text-emerald-400 font-bold" title="Vitórias">{stats.wins}V</span>
+          <span className="text-slate-600">•</span>
+          <span className="text-red-400 font-bold" title="Derrotas">{stats.losses}D</span>
+          <span className="text-slate-600">•</span>
+          <span className="text-slate-400" title="Empates">{stats.draws}E</span>
+          <span className="text-slate-600">•</span>
+          <span className="text-amber-300 font-bold" title="Taxa de Vitória">{winRate}%</span>
         </div>
       </div>
 
@@ -235,25 +199,15 @@ export const Lobby: React.FC<LobbyProps> = ({
       {canInstall && (
         <button
           onClick={handleInstallClick}
-          className="w-full mb-3 py-2 px-3 bg-gradient-to-r from-amber-600/20 via-orange-600/20 to-amber-600/20 hover:from-amber-600/30 hover:to-orange-600/30 border border-amber-500/40 rounded-xl text-xs font-bold text-amber-300 flex items-center justify-center gap-2 shadow-md transition"
+          className="w-full mb-2.5 py-1.5 px-3 bg-gradient-to-r from-amber-600/20 via-orange-600/20 to-amber-600/20 hover:from-amber-600/30 hover:to-orange-600/30 border border-amber-500/40 rounded-xl text-[11px] font-bold text-amber-300 flex items-center justify-center gap-2 shadow-sm transition"
         >
           <Download className="w-3.5 h-3.5" />
           Instalar App na Tela Inicial
         </button>
       )}
 
-      {/* Active Settings Summary Pills */}
-      <div className="w-full flex items-center justify-between px-2 py-1.5 bg-[#0e1017]/60 border border-amber-900/30 rounded-xl mb-3 text-[10px] text-amber-200/80">
-        <span className="flex items-center gap-1">
-          ⏱️ Ampulheta: <strong className="text-amber-300">{getTimeLabel()}</strong>
-        </span>
-        <span className="flex items-center gap-1">
-          🤖 CPU: <strong className="text-amber-300">{getDifficultyLabel()}</strong>
-        </span>
-      </div>
-
       {/* Main Options */}
-      <div className="w-full flex flex-col gap-2.5">
+      <div className="w-full flex flex-col gap-2">
         {/* Waiting screen when room is created */}
         {isWaiting && roomCode ? (
           <div className="bg-[#0e1017]/95 border-2 border-amber-500/60 rounded-2xl p-5 text-center shadow-2xl shadow-amber-950/40 animate-fade-in backdrop-blur-md">
@@ -317,79 +271,77 @@ export const Lobby: React.FC<LobbyProps> = ({
           </div>
         ) : (
           <>
-            {/* Create Room Button */}
+            {/* Create Room Button - 1 Linha de texto, mais clean */}
             <button
               onClick={onCreateRoom}
-              className="group relative w-full py-3.5 px-4 bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 hover:from-amber-500 hover:via-orange-500 hover:to-amber-600 active:scale-98 rounded-2xl font-bold text-white shadow-xl shadow-amber-950/50 flex items-center justify-between border border-amber-400/40 transition overflow-hidden"
+              className="group w-full py-2.5 px-3.5 bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 hover:from-amber-500 hover:via-orange-500 hover:to-amber-600 active:scale-98 rounded-xl font-bold text-white shadow-md shadow-amber-950/40 flex items-center justify-between border border-amber-400/40 transition"
             >
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-black/20 rounded-xl border border-white/10">
-                  <Swords className="w-5 h-5 text-amber-200" />
+              <div className="flex items-center gap-2.5">
+                <div className="p-1.5 bg-black/20 rounded-lg">
+                  <Swords className="w-4 h-4 text-amber-200" />
                 </div>
-                <div className="text-left">
-                  <div className="text-sm font-extrabold tracking-wide font-cinzel">Criar Arena Online</div>
-                  <div className="text-[11px] text-amber-100/80 font-normal">Gere um código e enfrente outro tributo (P2P)</div>
-                </div>
+                <span className="text-xs font-bold font-cinzel tracking-wide">Criar Arena Online</span>
               </div>
-              <ArrowRight className="w-4 h-4 text-amber-200 group-hover:translate-x-1 transition-transform" />
+              <ArrowRight className="w-4 h-4 text-amber-200 group-hover:translate-x-0.5 transition-transform" />
             </button>
 
-            {/* Join Room Box */}
-            <div className="bg-[#0e1017]/90 border border-amber-600/30 rounded-2xl p-3 flex flex-col gap-2 shadow-md">
-              <label className="text-[11px] font-semibold text-amber-200/80 font-cinzel">Entrar em uma Arena Existente</label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Ex: K8X2A"
-                  maxLength={6}
-                  value={inputCode}
-                  onChange={(e) => setInputCode(e.target.value.toUpperCase())}
-                  className="flex-1 bg-[#08090e] border border-amber-900/50 rounded-xl px-3 py-1.5 text-center font-mono font-bold tracking-widest text-amber-300 uppercase placeholder:text-slate-600 text-sm focus:outline-none focus:border-amber-500"
-                />
-                <button
-                  disabled={inputCode.trim().length < 3}
-                  onClick={() => onJoinRoom(inputCode)}
-                  className="px-4 py-1.5 bg-[#141724] hover:bg-[#1a1f30] disabled:opacity-40 disabled:pointer-events-none active:scale-95 text-amber-400 font-bold text-xs rounded-xl border border-amber-800/40 transition"
-                >
-                  Entrar
-                </button>
-              </div>
+            {/* Join Room Box - Compacto e integrado */}
+            <div className="w-full bg-[#0e1017]/85 border border-amber-900/40 rounded-xl p-1.5 pl-3 flex items-center gap-2 shadow-sm">
+              <input
+                type="text"
+                placeholder="CÓDIGO DA SALA (EX: K8X2A)"
+                maxLength={6}
+                value={inputCode}
+                onChange={(e) => setInputCode(e.target.value.toUpperCase())}
+                className="flex-1 bg-transparent font-mono font-bold tracking-widest text-amber-300 uppercase placeholder:text-slate-600 text-xs focus:outline-none"
+              />
+              <button
+                disabled={inputCode.trim().length < 3}
+                onClick={() => onJoinRoom(inputCode)}
+                className="px-3 py-1.5 bg-[#161a26] hover:bg-[#202538] disabled:opacity-30 disabled:pointer-events-none active:scale-95 text-amber-400 font-bold text-xs rounded-lg border border-amber-800/40 transition font-cinzel shrink-0"
+              >
+                Entrar
+              </button>
             </div>
 
-            {/* Play vs CPU Button (Direct Launch using configured Settings) */}
+            {/* Play vs CPU Button - 1 Linha de texto, mais clean */}
             <button
               onClick={onStartCpu}
-              className="w-full py-3.5 px-4 bg-[#0e1017]/90 hover:bg-[#141724] active:scale-98 border border-amber-600/30 rounded-2xl text-left flex items-center justify-between shadow-md transition"
+              className="group w-full py-2.5 px-3.5 bg-[#0e1017]/85 hover:bg-[#151926] active:scale-98 border border-amber-900/40 rounded-xl flex items-center justify-between shadow-sm transition"
             >
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-[#08090e] rounded-xl text-amber-400 border border-amber-900/40">
-                  <Bot className="w-5 h-5" />
+              <div className="flex items-center gap-2.5">
+                <div className="p-1.5 bg-[#08090e] rounded-lg text-amber-400 border border-amber-900/40">
+                  <Bot className="w-4 h-4" />
                 </div>
-                <div>
-                  <div className="text-sm font-bold text-slate-200 font-cinzel">Batalhar Contra a Capital (CPU)</div>
-                  <div className="text-[11px] text-slate-400">
-                    Modo {getDifficultyLabel()} • Jogar como {cpuPlayerColor === 'w' ? 'Distrito' : 'Capital'}
-                  </div>
-                </div>
+                <span className="text-xs font-bold text-slate-200 font-cinzel tracking-wide">
+                  Batalha Contra a CPU
+                </span>
               </div>
-              <ArrowRight className="w-4 h-4 text-amber-400/70" />
+              <ArrowRight className="w-4 h-4 text-amber-400/70 group-hover:translate-x-0.5 transition-transform" />
             </button>
 
-            {/* Local 2P */}
+            {/* Local 2P - 1 Linha de texto, mais clean */}
             <button
               onClick={onStartLocal}
-              className="w-full py-3 px-4 bg-[#0e1017]/80 hover:bg-[#141724] active:scale-98 border border-amber-900/30 rounded-2xl text-xs font-bold text-slate-300 flex items-center justify-center gap-2.5 transition"
+              className="group w-full py-2.5 px-3.5 bg-[#0e1017]/85 hover:bg-[#151926] active:scale-98 border border-amber-900/30 rounded-xl flex items-center justify-between shadow-sm transition"
             >
-              <Users className="w-4 h-4 text-amber-400/80" />
-              Jogar Local (Pass & Play no Aparelho)
+              <div className="flex items-center gap-2.5">
+                <div className="p-1.5 bg-[#08090e] rounded-lg text-amber-400/80 border border-amber-900/30">
+                  <Users className="w-4 h-4" />
+                </div>
+                <span className="text-xs font-bold text-slate-300 font-cinzel tracking-wide">
+                  Partida Local (Pass & Play)
+                </span>
+              </div>
+              <ArrowRight className="w-4 h-4 text-amber-400/50 group-hover:translate-x-0.5 transition-transform" />
             </button>
           </>
         )}
       </div>
 
       {/* Footer Info */}
-      <div className="mt-6 text-center text-[10px] text-slate-500 font-cinzel tracking-wider">
-        PANEM • DISTRICT 64 • FIDE RULES • WEBRTC P2P
+      <div className="mt-4 text-center text-[10px] text-slate-500 font-cinzel tracking-wider">
+        PANEM • DISTRICT 64 • FIDE RULES
       </div>
     </div>
   )
