@@ -27,6 +27,7 @@ interface LobbyProps {
   onStartLocal: () => void
   onStartCpu: () => void
   onOpenSettings: () => void
+  playerStats?: PlayerStats
   isMusicMuted?: boolean
   onToggleMusic?: () => void
   timeControl?: TimeControl
@@ -44,6 +45,7 @@ export const Lobby: React.FC<LobbyProps> = ({
   onStartLocal,
   onStartCpu,
   onOpenSettings,
+  playerStats,
   isMusicMuted = false,
   onToggleMusic,
   roomCode,
@@ -54,14 +56,14 @@ export const Lobby: React.FC<LobbyProps> = ({
   const [copied, setCopied] = useState(false)
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
   const [canInstall, setCanInstall] = useState(false)
-  const [stats, setStats] = useState<PlayerStats>(() => loadPlayerStats())
+  const [stats, setStats] = useState<PlayerStats>(() => playerStats || loadPlayerStats())
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('')
   const [showQrCode, setShowQrCode] = useState(false)
 
-  // Refresh stats on mount
+  // Refresh stats on mount or when playerStats prop updates
   useEffect(() => {
-    setStats(loadPlayerStats())
-  }, [])
+    setStats(playerStats || loadPlayerStats())
+  }, [playerStats])
 
   const shareUrl = roomCode
     ? `${window.location.origin}${window.location.pathname}?room=${roomCode}`
@@ -178,18 +180,27 @@ export const Lobby: React.FC<LobbyProps> = ({
         </p>
       </div>
 
-      {/* Registro do Tributo - Minimalista e Compacto */}
-      <div className="w-full bg-[#0e1017]/85 border border-amber-900/40 rounded-xl px-3 py-2 mb-3 flex items-center justify-between text-xs shadow-sm backdrop-blur-md">
-        <div className="flex items-center gap-1.5 text-amber-400/90 font-cinzel font-bold text-[10px] uppercase tracking-wider">
-          <Trophy className="w-3.5 h-3.5 text-amber-500" />
-          <span>Tributo</span>
+      {/* Registro do Tributo com Nome e ELO */}
+      <div
+        onClick={onOpenSettings}
+        className="w-full bg-[#0e1017]/85 hover:bg-[#121622] border border-amber-900/40 rounded-xl px-3 py-2 mb-3 flex items-center justify-between text-xs shadow-sm backdrop-blur-md cursor-pointer transition"
+        title="Clique para ver ou alterar ajustes do Tributo"
+      >
+        <div className="flex items-center gap-1.5 min-w-0">
+          <Trophy className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="font-cinzel font-bold text-amber-200 text-xs truncate max-w-[95px]" title={stats.name || 'Tributo'}>
+              {stats.name || 'Tributo'}
+            </span>
+            <span className="px-1.5 py-0.5 text-[10px] font-mono font-bold text-amber-400 bg-[#08090e] border border-amber-800/40 rounded-md shrink-0 shadow-inner">
+              {stats.rating || 1200} ELO
+            </span>
+          </div>
         </div>
-        <div className="flex items-center gap-2.5 font-mono text-[11px]">
+        <div className="flex items-center gap-2 font-mono text-[11px] shrink-0">
           <span className="text-emerald-400 font-bold" title="Vitórias">{stats.wins}V</span>
           <span className="text-slate-600">•</span>
           <span className="text-red-400 font-bold" title="Derrotas">{stats.losses}D</span>
-          <span className="text-slate-600">•</span>
-          <span className="text-slate-400" title="Empates">{stats.draws}E</span>
           <span className="text-slate-600">•</span>
           <span className="text-amber-300 font-bold" title="Taxa de Vitória">{winRate}%</span>
         </div>

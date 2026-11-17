@@ -4,7 +4,7 @@ import type { Square, PieceSymbol, Move } from 'chess.js'
 import type { GameMode, Color, GameStatus, PeerMessage, CpuDifficulty, TimeControl, PeerEmote, PieceTheme, BoardTheme } from './types'
 import { evaluateGameStatus, computeCapturedPieces } from './utils/chess'
 import { getBestCpuMove } from './utils/ai'
-import { recordMatchResult, resetPlayerStats } from './utils/stats'
+import { recordMatchResult, resetPlayerStats, loadPlayerStats, setPlayerName, CPU_RATINGS } from './utils/stats'
 import { peerService } from './services/peerService'
 import type { ConnectionState } from './services/peerService'
 import { haptics } from './utils/haptics'
@@ -16,6 +16,7 @@ import { GameFooter } from './components/GameFooter'
 import { PromotionModal } from './components/PromotionModal'
 import { GameOverModal } from './components/GameOverModal'
 import { SettingsModal } from './components/SettingsModal'
+import { PlayerNameModal } from './components/PlayerNameModal'
 
 export const App: React.FC = () => {
   // Navigation / Mode
@@ -23,6 +24,14 @@ export const App: React.FC = () => {
   const [gameMode, setGameMode] = useState<GameMode>('local')
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isMusicMuted, setIsMusicMuted] = useState(() => bgMusic.getIsMuted())
+
+  // Player Stats & ELO
+  const [playerStats, setPlayerStats] = useState(() => loadPlayerStats())
+  const [isNameModalOpen, setIsNameModalOpen] = useState(() => {
+    const current = loadPlayerStats()
+    return !current.name || current.name.trim().length === 0
+  })
+  const [lastMatchElo, setLastMatchElo] = useState<{ delta: number; newRating: number } | null>(null)
 
   // Inicializa música de fundo no carregamento
   useEffect(() => {
@@ -170,15 +179,13 @@ export const App: React.FC = () => {
   useEffect(() => {
     if (gameStatus.isOver && !hasRecordedStats.current && (gameMode === 'cpu' || gameMode === 'online')) {
       hasRecordedStats.current = true
-      if (gameStatus.winner === 'draw') {
-        recordMatchResult('draw')
-      } else if (gameStatus.winner === playerColor) {
-        recordMatchResult('win')
-      } else {
-        recordMatchResult('loss')
-      }
+      const opponentRating = gameMode === 'cpu' ? CPU_RATINGS[cpuDifficulty] : 1200
+      const outcome = gameStatus.winner === 'draw' ? 'draw' : gameStatus.winner === playerColor ? 'win' : 'loss'
+      const result = recordMatchResult(outcome, opponentRating)
+      setPlayerStats(result.stats)
+      setLastMatchElo({ delta: result.delta, newRating: result.newRating })
     }
-  }, [gameStatus.isOver, gameStatus.winner, gameMode, playerColor])
+  }, [gameStatus.isOver, gameStatus.winner, gameMode, playerColor, cpuDifficulty])
 
   // Chess Clock Interval
   useEffect(() => {
@@ -385,6 +392,7 @@ export const App: React.FC = () => {
   // CPU Game
   const handleStartCpu = () => {
     hasRecordedStats.current = false
+    setLastMatchElo(null)
     isCpuThinking.current = false
     setIsCpuPlaying(false)
     setGameMode('cpu')
@@ -402,6 +410,7 @@ export const App: React.FC = () => {
   // Local Pass & Play
   const handleStartLocal = () => {
     hasRecordedStats.current = false
+    setLastMatchElo(null)
     isCpuThinking.current = false
     setIsCpuPlaying(false)
     setGameMode('local')
@@ -419,6 +428,7 @@ export const App: React.FC = () => {
   // Reset / Rematch
   const handleRestart = () => {
     hasRecordedStats.current = false
+    setLastMatchElo(null)
     isCpuThinking.current = false
     setIsCpuPlaying(false)
     setShowCheckAlert(false)
@@ -437,6 +447,7 @@ export const App: React.FC = () => {
   // Return to Lobby
   const handleExit = () => {
     hasRecordedStats.current = false
+    setLastMatchElo(null)
     isCpuThinking.current = false
     setIsCpuPlaying(false)
     setShowCheckAlert(false)
@@ -568,6 +579,7 @@ export const App: React.FC = () => {
           roomCode={roomCode}
           connectionStatus={connectionStatus}
           isWaiting={connectionState === 'waiting'}
+          playerStats={playerStats}
         />
       ) : (
         <div className="w-full flex-1 flex flex-col items-center justify-between max-w-md py-1">
@@ -610,7 +622,8 @@ export const App: React.FC = () => {
             mode={gameMode}
             playerColor={playerColor}
             isMyTurn={isMyTurn}
-            inCheck={gameStatus.inCheck}
+            playerName={playerStats.name}
+            playerRating={playerStats.rating}
             timeRemaining={timeControl > 0 ? clocks[playerColor] : undefined}
             capturedByMe={playerColor === 'w' ? captured.b : captured.w}
           />
@@ -643,6 +656,7 @@ export const App: React.FC = () => {
               reason={gameStatus.reason}
               playerColor={playerColor}
               isOnline={gameMode !== 'local'}
+              ratingChange={lastMatchElo}
               onRestart={handleRestart}
               onExit={handleExit}
             />
@@ -654,6 +668,12 @@ export const App: React.FC = () => {
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
+        playerName={playerStats.name}
+        playerRating={playerStats.rating}
+        onUpdateName={(name) => {
+          const updated = setPlayerName(name)
+          setPlayerStats(updated)
+        }}
         timeControl={timeControl}
         onSelectTimeControl={handleSelectTimeControl}
         cpuDifficulty={cpuDifficulty}
@@ -664,8 +684,23 @@ export const App: React.FC = () => {
         onSelectPieceTheme={handleSelectPieceTheme}
         boardTheme={boardTheme}
         onSelectBoardTheme={handleSelectBoardTheme}
-        onResetStats={() => resetPlayerStats()}
+        onResetStats={() => {
+          const updated = resetPlayerStats()
+          setPlayerStats(updated)
+        }}
       />
+
+      {/* Modal de Primeiro Acesso: Nome / Apelido do Tributo */}
+      {isNameModalOpen && (
+        <PlayerNameModal
+          initialName={playerStats.name}
+          onSave={(name) => {
+            const updated = setPlayerName(name)
+            setPlayerStats(updated)
+            setIsNameModalOpen(false)
+          }}
+        />
+      )}
     </div>
   )
 }

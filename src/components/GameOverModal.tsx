@@ -9,6 +9,7 @@ interface GameOverModalProps {
   reason: string | null
   playerColor: Color
   isOnline: boolean
+  ratingChange?: { delta: number; newRating: number } | null
   onRestart: () => void
   onExit: () => void
 }
@@ -18,6 +19,7 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
   reason,
   playerColor,
   isOnline,
+  ratingChange,
   onRestart,
   onExit
 }) => {
@@ -79,7 +81,31 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
         <h2 className="text-2xl font-extrabold font-cinzel text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-orange-400 mb-1">
           {getTitle()}
         </h2>
-        <p className="text-xs text-slate-300 mb-2">{getSubtitle()}</p>
+        <p className="text-xs text-slate-300 mb-1">{getSubtitle()}</p>
+
+        {/* Variação de Rating ELO */}
+        {ratingChange && (
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#08090e] border border-amber-900/50 rounded-xl my-2 text-xs font-mono shadow-sm">
+            <span className="text-slate-400 font-cinzel text-[10px] uppercase font-bold tracking-wider">
+              Rating ELO:
+            </span>
+            <span
+              className={`font-black font-mono ${
+                ratingChange.delta > 0
+                  ? 'text-emerald-400'
+                  : ratingChange.delta < 0
+                  ? 'text-red-400'
+                  : 'text-slate-300'
+              }`}
+            >
+              {ratingChange.delta > 0 ? `+${ratingChange.delta}` : ratingChange.delta}
+            </span>
+            <span className="text-slate-500">•</span>
+            <span className="font-bold text-amber-300 font-mono">
+              {ratingChange.newRating} ELO
+            </span>
+          </div>
+        )}
 
         {/* Thematic Quote */}
         <div className="my-4 py-2 px-3 bg-[#07080d] rounded-xl border border-amber-900/40 text-[11px] italic text-amber-200/80 font-cinzel">

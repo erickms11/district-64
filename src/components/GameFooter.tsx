@@ -9,6 +9,8 @@ interface GameFooterProps {
   currentTurn?: Color
   isMyTurn: boolean
   inCheck?: boolean
+  playerName?: string
+  playerRating?: number
   timeRemaining?: number
   capturedByMe: PieceSymbol[]
 }
@@ -24,6 +26,8 @@ export const GameFooter: React.FC<GameFooterProps> = ({
   mode,
   playerColor,
   isMyTurn,
+  playerName,
+  playerRating,
   timeRemaining,
   capturedByMe
 }) => {
@@ -32,6 +36,9 @@ export const GameFooter: React.FC<GameFooterProps> = ({
   const getMyTitle = () => {
     if (mode === 'local') {
       return playerColor === 'w' ? 'Distrito 12 (Vermelho)' : 'Pacificadores (Branco)'
+    }
+    if (playerName) {
+      return `${playerName} (${playerRating || 1200} ELO)`
     }
     return playerColor === 'w' ? 'Distrito 12 - Katniss (Você)' : 'Pacificadores da Capital (Você)'
   }
