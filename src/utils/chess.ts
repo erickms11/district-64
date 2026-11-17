@@ -105,3 +105,13 @@ export function getBoardSquares(isFlipped: boolean): Square[] {
   }
   return squares
 }
+
+export function getSquareCoords(sq: Square, isFlipped: boolean): { col: number; row: number } {
+  const file = sq.charCodeAt(0) - 97 // 0=a .. 7=h
+  const rank = parseInt(sq[1], 10) - 1 // 0=1 .. 7=8
+  if (!isFlipped) {
+    return { col: file, row: 7 - rank }
+  } else {
+    return { col: 7 - file, row: rank }
+  }
+}
