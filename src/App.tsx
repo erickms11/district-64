@@ -90,6 +90,7 @@ export const App: React.FC = () => {
   const [pendingPromotion, setPendingPromotion] = useState<{ from: Square; to: Square } | null>(null)
   const [gameStatus, setGameStatus] = useState<GameStatus>(() => evaluateGameStatus(chess))
   const [showCheckAlert, setShowCheckAlert] = useState(false)
+  const [checkAlertText, setCheckAlertText] = useState<'Rei em Xeque!' | 'Xeque-Mate!'>('Rei em Xeque!')
   const checkTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const isCpuThinking = useRef(false)
@@ -118,8 +119,17 @@ export const App: React.FC = () => {
     const status = evaluateGameStatus(chess)
     setGameStatus(status)
 
-    if (status.inCheck && !status.isOver) {
+    if (status.isOver && status.reason === 'checkmate') {
+      haptics.fallen()
+      setCheckAlertText('Xeque-Mate!')
+      setShowCheckAlert(true)
+      if (checkTimeoutRef.current) clearTimeout(checkTimeoutRef.current)
+      checkTimeoutRef.current = setTimeout(() => {
+        setShowCheckAlert(false)
+      }, 2400)
+    } else if (status.inCheck && !status.isOver) {
       haptics.check()
+      setCheckAlertText('Rei em Xeque!')
       setShowCheckAlert(true)
       if (checkTimeoutRef.current) clearTimeout(checkTimeoutRef.current)
       checkTimeoutRef.current = setTimeout(() => {
@@ -628,12 +638,12 @@ export const App: React.FC = () => {
             capturedByMe={playerColor === 'w' ? captured.b : captured.w}
           />
 
-          {/* 👑 Alerta de Rei em Cheque: Compacto e perfeitamente contido no tabuleiro, sem fundo */}
-          {showCheckAlert && !gameStatus.isOver && (
+          {/* 👑 Alerta de Rei em Xeque / Xeque-Mate: Compacto e perfeitamente contido no tabuleiro, sem fundo */}
+          {showCheckAlert && (
             <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none select-none px-4">
               <div className="animate-check-glow max-w-[280px] flex items-center justify-center">
                 <span className="text-xl sm:text-2xl font-black font-cinzel tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-yellow-100 via-red-500 to-amber-300 drop-shadow-[0_0_18px_rgba(239,68,68,0.95)] whitespace-nowrap text-center">
-                  Rei em Cheque!
+                  {checkAlertText}
                 </span>
               </div>
             </div>

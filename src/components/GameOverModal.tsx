@@ -78,6 +78,12 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
           </div>
         </div>
 
+        {reason === 'checkmate' && (
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-950/80 border border-red-700/80 text-[11px] font-black font-cinzel text-red-300 tracking-wider mb-2 shadow-md shadow-red-950/50">
+            <span>⚔️ Xeque-Mate!</span>
+          </div>
+        )}
+
         <h2 className="text-2xl font-extrabold font-cinzel text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-orange-400 mb-1">
           {getTitle()}
         </h2>

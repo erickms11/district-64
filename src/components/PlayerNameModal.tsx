@@ -72,3 +72,4 @@ export const PlayerNameModal: React.FC<PlayerNameModalProps> = ({
     </div>
   )
 }
+

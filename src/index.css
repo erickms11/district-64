@@ -61,7 +61,7 @@
   will-change: transform;
 }
 
-/* 👑 Alerta de Rei em Cheque: Brilho elegante e compacto no centro do tabuleiro, sem sair das bordas */
+/* 👑 Alerta de Rei em Xeque / Xeque-Mate: Brilho elegante e compacto no centro do tabuleiro, sem sair das bordas */
 @keyframes checkGlow {
   0% {
     opacity: 0;
